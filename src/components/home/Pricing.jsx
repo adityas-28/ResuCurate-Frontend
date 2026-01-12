@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 function Pricing() {
+  const navigate = useNavigate();
   const plans = [
     {
       id: "starter",
@@ -47,7 +49,9 @@ function Pricing() {
     },
   ];
 
-  const handlePurchase = async (planId) => {};
+  const handlePurchase = async (planId) => {
+    navigate("/notify");
+  };
   return (
     <>
       <div className="w-full max-w-6xl mx-auto z-20 max-md:px-4 mt-15">

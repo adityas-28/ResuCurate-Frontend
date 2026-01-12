@@ -1,8 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
-  const query = new URLSearchParams(window.location.search)
-  const urlState = query.get('state')
+  const navigate = useNavigate();
+
+  const query = new URLSearchParams(window.location.search);
+  const urlState = query.get("state");
   const [state, setState] = React.useState(urlState || "login");
 
   const [formData, setFormData] = React.useState({
@@ -18,6 +21,7 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    navigate("/notify");
   };
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-950 focus-within:ring-indigo-500/60">
@@ -128,7 +132,7 @@ function Login() {
 
         <button
           type="submit"
-          className="mt-2 w-full h-11 rounded-full text-white bg-indigo-600 hover:bg-indigo-500 transition focus-within:ring-indigo-500/60 "
+          className="mt-2 w-full h-11 rounded-full text-white bg-indigo-600 hover:bg-indigo-500 transition focus-within:ring-indigo-500/60"
         >
           {state === "login" ? "Login" : "Sign up"}
         </button>
