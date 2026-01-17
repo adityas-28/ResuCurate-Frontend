@@ -121,7 +121,7 @@ export default function Navbar({
             ))}
             <div className="mt-4 flex flex-col items-center gap-4">
               <Link
-                to="/app"
+                to="/login"
                 className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black shadow-[0px_0px_30px_7px] shadow-white/50 transition duration-300 hover:bg-slate-100 hover:shadow-[0px_0px_30px_14px] hover:shadow-white/50 text-center"
                 onClick={() => setOpen(false)}
               >

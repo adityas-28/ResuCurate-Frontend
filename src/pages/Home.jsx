@@ -39,7 +39,7 @@ export default function Home() {
             mouseForce={35}
             cursorSize={100}
             isViscous={false}
-            viscous={30}
+            viscous={50}
             iterationsViscous={32}
             iterationsPoisson={32}
             resolution={0.5}
