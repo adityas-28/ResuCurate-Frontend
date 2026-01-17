@@ -20,20 +20,19 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import PersonalInfoForm from "../components/PersonalInfoForm";
-import ProfessionalSummaryForm from "../components/ProfessionalSummaryForm";
-import CareerObjectiveForm from "../components/CareerObjectiveForm";
-import ProfessionalExperienceForm from "../components/ProfessionalExperienceForm";
-import EducationForm from "../components/EducationForm";
-import LeadershipForm from "../components/LeadershipForm";
-import ProjectsForm from "../components/ProjectsForm";
-import ResearchForm from "../components/ResearchForm";
-import CertificationsForm from "../components/CertificationsForm";
-import AwardsAndHonorsForm from "../components/AwardsAndHonorsForm";
-import SkillsForm from "../components/SkillsForm";
-import PublicationsForm from "../components/PublicationsForm";
-import ResumePreview from "../components/ResumePreview";
-import TemplateSelector from "../components/TemplateSelector";
+import PersonalInfoForm from "../components/Arsenal/PersonalInfoForm";
+import ProfessionalSummaryForm from "../components/Arsenal/ProfessionalSummaryForm";
+import CareerObjectiveForm from "../components/Arsenal/CareerObjectiveForm";
+import ProfessionalExperienceForm from "../components/Arsenal/ProfessionalExperienceForm";
+import EducationForm from "../components/Arsenal/EducationForm";
+import LeadershipForm from "../components/Arsenal/LeadershipForm";
+import ProjectsForm from "../components/Arsenal/ProjectsForm";
+import ResearchForm from "../components/Arsenal/ResearchForm";
+import CertificationsForm from "../components/Arsenal/CertificationsForm";
+import AwardsAndHonorsForm from "../components/Arsenal/AwardsAndHonorsForm";
+import SkillsForm from "../components/Arsenal/SkillsForm";
+import PublicationsForm from "../components/Arsenal/PublicationsForm";
+import TemplateSelector from "../components/Arsenal/TemplateSelector";
 import ColorPicker from "../components/ColorPicker";
 
 function ResuBuilder() {
@@ -77,23 +76,12 @@ function ResuBuilder() {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [showSectionModal, setShowSectionModal] = useState(false);
 
-  const loadExistingResume = async () => {
-    const resume = dummyResumeData.find((resume) => resume._id === resumeId);
-    if (resume) {
-      setResumeData({
-        ...resumeData,
-        ...resume,
-        professional_summary: resume.professional_summary || "",
-        career_objective: resume.career_objective || "",
-        leadership: resume.leadership || [],
-        research: resume.research || [],
-        certifications: resume.certifications || [],
-        awards_and_honors: resume.awards_and_honors || [],
-        publications: resume.publications || [],
-      });
-      document.title = resume.title;
-    }
-  };
+  const [isArsenal, setIsArsenal] = useState(false);
+
+  useEffect(() => {
+    setIsArsenal(resumeId === "arsenal");
+    loadExistingResume();
+  }, [resumeId]);
 
   const [removeBackground, setRemoveBackground] = useState(false);
 
@@ -141,113 +129,153 @@ function ResuBuilder() {
     setShowSectionModal(false);
   };
 
-  useEffect(() => {
-    loadExistingResume();
-  }, []);
+  const loadExistingResume = async () => {
+    if (resumeId === "arsenal") {
+      setResumeData({
+        ...resumeData,
+        title: "My Arsenal",
+        // In a real app, load the master arsenal data here
+        // For now, loading dummy data but we'd merge everything
+        ...dummyResumeData[0], // Loading first one as seed data
+        _id: "arsenal",
+        template: "arsenal", // Special template or null
+      });
+      document.title = "My Arsenal - ResuCurate";
+      return;
+    }
+    
+    // Check if it's a generated ID (from our Dashboard mock)
+    if (resumeId && resumeId.startsWith("generated-")) {
+      setResumeData({
+        ...resumeData,
+        _id: resumeId,
+        title: "Generated Resume",
+        // Load random subset of data to simulate "generation"
+        ...dummyResumeData[0], 
+        personal_info: dummyResumeData[0].personal_info
+      });
+      document.title = "Generated Resume - ResuCurate";
+      return;
+    }
+
+    const resume = dummyResumeData.find((resume) => resume._id === resumeId);
+    if (resume) {
+      setResumeData({
+        ...resumeData,
+        ...resume,
+        professional_summary: resume.professional_summary || "",
+        career_objective: resume.career_objective || "",
+        leadership: resume.leadership || [],
+        research: resume.research || [],
+        certifications: resume.certifications || [],
+        awards_and_honors: resume.awards_and_honors || [],
+        publications: resume.publications || [],
+      });
+      document.title = resume.title;
+    }
+  };
 
   return (
-    <div>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="bg-gray-950 min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         <Link
           to={"/app"}
-          className="inline-flex gap-2 items-center text-slate-300 hover:text-slate-400 transition-all"
+          className="inline-flex gap-2 items-center text-gray-400 hover:text-white transition-colors mb-6"
         >
           <ArrowLeftIcon className="size-4" /> Back to Dashboard
         </Link>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 pb-8">
-        <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left Panel - Form */}
-          <div className="relative lg:col-span-5 rounded-lg overflow-hidden">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              {/* Template and Color Picker */}
-              <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                <TemplateSelector
-                  selectedTemplate={resumeData.template}
-                  onChange={(template) =>
-                    setResumeData((prev) => ({ ...prev, template }))
-                  }
-                />
-                <ColorPicker
-                  selectedColor={resumeData.accent_color}
-                  onChange={(color) =>
-                    setResumeData((prev) => ({
-                      ...prev,
-                      accent_color: color,
-                    }))
-                  }
-                />
-              </div>
+        {/* Form Container */}
+        <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-700 p-6 md:p-8">
+          {/* Template and Color Picker */}
+          {!isArsenal && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-700 pb-4">
+              <TemplateSelector
+                selectedTemplate={resumeData.template}
+                onChange={(template) =>
+                  setResumeData((prev) => ({ ...prev, template }))
+                }
+              />
+              <ColorPicker
+                selectedColor={resumeData.accent_color}
+                onChange={(color) =>
+                  setResumeData((prev) => ({
+                    ...prev,
+                    accent_color: color,
+                  }))
+                }
+              />
+            </div>
+          )}
 
-              {/* Add Section Button */}
-              <div className="mb-4">
-                <button
-                  onClick={() => setShowSectionModal(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          {/* Add Section Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowSectionModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors font-medium"
+            >
+              <Plus className="size-5" />
+              Choose Section to Add
+            </button>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+            <button
+              onClick={handlePrevious}
+              disabled={activeSectionIndex === 0}
+              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="size-4" /> Previous
+            </button>
+            <span className="text-sm text-gray-400">
+              {activeSectionIndex + 1} of {sections.length}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={activeSectionIndex === sections.length - 1}
+              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next <ChevronRight className="size-4" />
+            </button>
+          </div>
+
+          {/* Active Form Section Only */}
+          <div>
+            {sections.map((section, index) => {
+              const Icon = section.icon;
+              const isIncluded = sectionIncluded[section.id];
+              const isActive = activeSectionIndex === index;
+
+              if (!isActive) return null;
+
+              return (
+                <div
+                  key={section.id}
+                  id={`section-${section.id}`}
+                  className="border border-indigo-500/50 rounded-lg overflow-hidden shadow-lg transition-all bg-gray-800/50"
                 >
-                  <Plus className="size-4" />
-                  Add Section
-                </button>
-              </div>
+                  {/* Section Header with Checkbox */}
+                  <div className="w-full flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
+                    <div className="flex items-center gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={isIncluded}
+                        onChange={(e) =>
+                          toggleSectionIncluded(section.id, e)
+                        }
+                        className="w-4 h-4 text-indigo-600 border-gray-500 rounded focus:ring-indigo-500 cursor-pointer bg-gray-700"
+                        title="Include this section in resume"
+                      />
+                      <Icon className="size-5 text-indigo-400" />
+                      <h3 className="text-lg font-semibold text-white">
+                        {section.name}
+                      </h3>
+                    </div>
+                  </div>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-300">
-                <button
-                  onClick={handlePrevious}
-                  disabled={activeSectionIndex === 0}
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="size-4" /> Previous
-                </button>
-                <span className="text-sm text-gray-500">
-                  {activeSectionIndex + 1} of {sections.length}
-                </span>
-                <button
-                  onClick={handleNext}
-                  disabled={activeSectionIndex === sections.length - 1}
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next <ChevronRight className="size-4" />
-                </button>
-              </div>
-
-              {/* Active Form Section Only */}
-              <div>
-                {sections.map((section, index) => {
-                  const Icon = section.icon;
-                  const isIncluded = sectionIncluded[section.id];
-                  const isActive = activeSectionIndex === index;
-
-                  if (!isActive) return null;
-
-                  return (
-                    <div
-                      key={section.id}
-                      id={`section-${section.id}`}
-                      className="border border-blue-500 rounded-lg overflow-hidden shadow-md transition-all"
-                    >
-                      {/* Section Header with Checkbox */}
-                      <div className="w-full flex items-center justify-between p-4 bg-gray-50">
-                        <div className="flex items-center gap-3 flex-1">
-                          <input
-                            type="checkbox"
-                            checked={isIncluded}
-                            onChange={(e) =>
-                              toggleSectionIncluded(section.id, e)
-                            }
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                            title="Include this section in resume"
-                          />
-                          <Icon className="size-5 text-gray-700" />
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {section.name}
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Section Content */}
-                      <div className="p-6 border-t border-gray-200">
+                  {/* Section Content */}
+                  <div className="p-6 bg-gray-900">
                         {section.id === "personal" && (
                           <PersonalInfoForm
                             data={resumeData.personal_info}
@@ -392,56 +420,11 @@ function ResuBuilder() {
                               }))
                             }
                           />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Panel - Preview */}
-          <div className="lg:col-span-7 max-lg:mt-6">
-            <ResumePreview
-              data={{
-                ...resumeData,
-                // Filter data based on sectionIncluded checkboxes
-                personal_info: sectionIncluded.personal
-                  ? resumeData.personal_info
-                  : {},
-                professional_summary: sectionIncluded.professional_summary
-                  ? resumeData.professional_summary
-                  : "",
-                career_objective: sectionIncluded.career_objective
-                  ? resumeData.career_objective
-                  : "",
-                experience: sectionIncluded.experience
-                  ? resumeData.experience
-                  : [],
-                education: sectionIncluded.education
-                  ? resumeData.education
-                  : [],
-                leadership: sectionIncluded.leadership
-                  ? resumeData.leadership
-                  : [],
-                project: sectionIncluded.projects ? resumeData.project : [],
-                research: sectionIncluded.research ? resumeData.research : [],
-                certifications: sectionIncluded.certifications
-                  ? resumeData.certifications
-                  : [],
-                awards_and_honors: sectionIncluded.awards_and_honors
-                  ? resumeData.awards_and_honors
-                  : [],
-                skills: sectionIncluded.skills ? resumeData.skills : [],
-                publications: sectionIncluded.publications
-                  ? resumeData.publications
-                  : [],
-                sectionIncluded, // Also pass for template reference
-              }}
-              template={resumeData.template}
-              accentColor={resumeData.accent_color}
-            />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -454,18 +437,18 @@ function ResuBuilder() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+            className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-2xl font-bold text-white">
                 Select a Section
               </h2>
               <button
                 onClick={() => setShowSectionModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <X className="size-5 text-gray-600" />
+                <X className="size-5 text-gray-400" />
               </button>
             </div>
 
@@ -483,15 +466,15 @@ function ResuBuilder() {
                       onClick={() => navigateToSection(index)}
                       className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all text-left ${
                         isActive
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-indigo-500 bg-indigo-500/20"
+                          : "border-gray-700 hover:border-gray-600 hover:bg-gray-800"
                       }`}
                     >
                       <div
                         className={`p-2 rounded-lg ${
                           isActive
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-600"
+                            ? "bg-indigo-500/30 text-indigo-400"
+                            : "bg-gray-800 text-gray-400"
                         }`}
                       >
                         <Icon className="size-5" />
@@ -499,7 +482,7 @@ function ResuBuilder() {
                       <div className="flex-1">
                         <h3
                           className={`font-semibold ${
-                            isActive ? "text-blue-900" : "text-gray-900"
+                            isActive ? "text-white" : "text-gray-300"
                           }`}
                         >
                           {section.name}
@@ -508,21 +491,21 @@ function ResuBuilder() {
                           <span
                             className={`text-xs px-2 py-0.5 rounded ${
                               isActive
-                                ? "bg-blue-200 text-blue-700"
-                                : "bg-gray-200 text-gray-600"
+                                ? "bg-indigo-500/30 text-indigo-300"
+                                : "bg-gray-800 text-gray-500"
                             }`}
                           >
                             {index + 1} of {sections.length}
                           </span>
                           {isIncluded && (
-                            <span className="text-xs text-green-600 font-medium">
+                            <span className="text-xs text-green-400 font-medium">
                               ✓ Included
                             </span>
                           )}
                         </div>
                       </div>
                       {isActive && (
-                        <div className="text-blue-600">
+                        <div className="text-indigo-400">
                           <ChevronRight className="size-5" />
                         </div>
                       )}

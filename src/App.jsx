@@ -6,6 +6,11 @@ import Login from "./pages/Login";
 import Preview from "./pages/Preview";
 import ResuBuilder from "./pages/ResuBuilder";
 import Layout from "./pages/Layout";
+import AtsScan from "./pages/AtsScan";
+import MyResumes from "./pages/MyResumes";
+import GenerateResume from "./pages/GenerateResume";
+import ViewArsenal from "./pages/ViewArsenal";
+import ReviewResume from "./pages/ReviewResume";
 import Notify from "./components/Notify";
 import NotFound from "./components/NotFound";
 // import Settings from './pages/Settings'
@@ -25,9 +30,14 @@ function App() {
 
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="builder/:resumeId" element={<ResuBuilder />} />
+          <Route path="ats-scan" element={<AtsScan />} />
+          <Route path="my-resumes" element={<MyResumes />} />
+          <Route path="generate" element={<GenerateResume />} />
+          <Route path="view-arsenal" element={<ViewArsenal />} />
         </Route>
 
         <Route path="view/:resumeId" element={<Preview />} />
+        <Route path="review/:resumeId" element={<ReviewResume />} />
         <Route path="login" element={<Login />} />
         <Route path="notify" element={<Notify />} />
         <Route path="*" element={<NotFound />} />

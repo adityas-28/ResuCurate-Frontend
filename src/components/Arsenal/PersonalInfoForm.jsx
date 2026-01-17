@@ -67,12 +67,11 @@ function PersonalInfoForm({
   ];
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-90">
-        {" "}
+      <h3 className="text-lg font-semibold text-white mb-2">
         Personal Information
       </h3>
-      <p className="">Get started with the personal information</p>
-      <div className="flex items-center gap-2">
+      <p className="text-gray-400 text-sm mb-4">Get started with the personal information</p>
+      <div className="flex items-center gap-2 mb-6">
         <label>
           {data.image ? (
             <img
@@ -82,12 +81,12 @@ function PersonalInfoForm({
                   : URL.createObjectURL(data.image)
               }
               alt="user-image"
-              className="w-16 h-16 rounded-full object-cover mt-5 ring ring-slate-300 hover : opacity-80"
+              className="w-16 h-16 rounded-full object-cover ring-2 ring-indigo-500/50 hover:opacity-80 transition-opacity cursor-pointer"
             />
           ) : (
-            <div className="inline-flex items-center gap-2 mt-5 text-slate-600 hover:text-slate-700 cursor-pointer">
-              <User className="size-10 p-2.5 border rounded-full" /> upload user
-              image
+            <div className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-300 cursor-pointer transition-colors">
+              <User className="size-10 p-2.5 border border-gray-600 rounded-full" /> 
+              <span className="text-sm">Upload user image</span>
             </div>
           )}
           <input
@@ -101,25 +100,20 @@ function PersonalInfoForm({
         </label>
         {typeof data.image === "object" && (
           <div className="flex flex-col gap-1 pl-4 text-sm">
-            <p>Remove Background</p>
+            <p className="text-gray-400">Remove Background</p>
 
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 className="sr-only peer"
                 checked={removeBackground}
-                // onChange={() => setRemoveBackground((prev) => !prev)}
                 onChange={(e) => setRemoveBackground(e.target.checked)}
               />
 
               {/* Track */}
               <div
-                // className="relative w-9 h-5 bg-slate-300 rounded-full
-                //   transition-colors duration-200
-                //   peer-checked:bg-green-600
-                // "
                 className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${
-                  removeBackground ? "bg-green-600" : "bg-slate-300"
+                  removeBackground ? "bg-green-600" : "bg-gray-600"
                 }`}
               >
                 {/* Knob */}
@@ -138,17 +132,17 @@ function PersonalInfoForm({
       {fields.map((field) => {
         const Icon = field.icon;
         return (
-          <div key={field.key} className="space-y-1 mt-5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
-              <Icon className="size-4" />
+          <div key={field.key} className="space-y-2 mb-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+              <Icon className="size-4 text-indigo-400" />
               {field.label}
-              {field.required && <span className="text-red-500">*</span>}
+              {field.required && <span className="text-red-400">*</span>}
             </label>
             <input
               type={field.type}
               value={data[field.key] || ""}
               onChange={(e) => handleChange(field.key, e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-sm"
+              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-white placeholder-gray-500"
               placeholder={`Enter your ${field.label.toLowerCase()}`}
               required={field.required}
             />

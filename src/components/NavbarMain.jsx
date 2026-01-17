@@ -122,9 +122,10 @@ function NavbarMain() {
 
   const tabs = [
     { label: "Dashboard", path: "/app" },
-    { label: "Generate", path: "/builder" },
-    { label: "ATS Scan", path: "/ats-scan" },
-    { label: "My Resumes", path: "/my-resumes" },
+    { label: "Generate", path: "/app/generate" },
+    { label: "ATS Scan", path: "/app/ats-scan" },
+    { label: "My Resumes", path: "/app/my-resumes" },
+    { label: "View Arsenal", path: "/app/view-arsenal" },
   ];
 
   return (

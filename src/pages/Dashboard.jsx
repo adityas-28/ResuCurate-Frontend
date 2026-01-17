@@ -23,9 +23,27 @@ function Dashboard() {
 
   const [allResumes, setAllResumes] = useState([]);
   const [showUploadResume, setShowUploadResume] = useState(false);
+  const [showNewResumeModal, setShowNewResumeModal] = useState(false);
   const [title, setTitle] = useState("");
   const [resume, setResume] = useState(null);
   const [editResumeId, setEditResumeId] = useState("");
+
+  // New Resume Generation State
+  const [newResumeData, setNewResumeData] = useState({
+    jobDescription: "",
+    experienceLevel: "Mid Level",
+    category: "",
+    subCategory: ""
+  });
+
+  const jobCategories = {
+    "Software Development": ["Backend", "Frontend", "Fullstack", "Mobile", "DevOps", "Game Dev"],
+    "Data & AI": ["Data Scientist", "Data Engineer", "Machine Learning", "AI Researcher", "Data Analyst"],
+    "Product Management": ["Technical PM", "Growth PM", "Product Owner"],
+    "Design": ["UI/UX", "Product Design", "Graphic Design", "Motion Design"],
+    "Cybersecurity": ["Security Analyst", "Ethical Hacker", "Security Engineer"],
+    "Marketing": ["Digital Marketing", "Content Strategy", "SEO Specialist"]
+  };
 
   const navigate = useNavigate();
 
@@ -37,6 +55,18 @@ function Dashboard() {
     // Navigate directly to arsenal builder - no resume name needed
     // Using 'arsenal' as a special ID to indicate this is the shared arsenal
     navigate(`/app/builder/arsenal`);
+  };
+
+  const generateResume = (e) => {
+    e.preventDefault();
+    // Simulate generation by creating a new resume ID and navigating
+    // In a real app, this would send the JD to the backend to generate the resume content
+    const generatedId = `generated-${Date.now()}`;
+    const resumeTitle = `${newResumeData.subCategory} Resume`;
+    
+    // Pass the generation data via state or query params if needed
+    // For now, we'll just navigate to the builder for this new ID
+    navigate(`/app/builder/${generatedId}`);
   };
 
   const uploadResume = async (event) => {
@@ -173,7 +203,7 @@ function Dashboard() {
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 lg:w-64">
                 <button
-                  onClick={() => navigate("/create/jd")}
+                  onClick={() => navigate("/app/generate")}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 flex items-center justify-center gap-2 group"
                 >
                   <Sparkles className="size-5" />
@@ -230,68 +260,6 @@ function Dashboard() {
           </button>
         </div>
 
-        <hr className="border-gray-700 my-6 sm:w-[305px]" />
-
-        <div className="grid grid-cols-2 sm:flex flex-wrap gap-4">
-          {allResumes.map((resume, index) => {
-            const baseColor = colors[index % colors.length];
-
-            return (
-              <button
-                onClick={() => navigate(`/app/builder/${resume._id}`)}
-                key={resume.id || index}
-                className="relative w-full sm:max-w-36 h-48 flex flex-col
-        items-center justify-center rounded-lg gap-2 border group
-        hover:shadow-lg transition-all duration-300"
-                style={{
-                  background: `linear-gradient(135deg, ${baseColor}10, ${baseColor}40)`,
-                  borderColor: `${baseColor}40`,
-                }}
-              >
-                <FilePenLineIcon
-                  className="size-7 transition-transform group-hover:scale-105"
-                  style={{ color: baseColor }}
-                />
-
-                <p
-                  className="text-sm transition-transform group-hover:scale-105 px-2 text-center"
-                  style={{ color: baseColor }}
-                >
-                  {resume.title}
-                </p>
-
-                <p
-                  className="absolute bottom-1 text-[11px] transition-colors duration-300 px-2 text-center"
-                  style={{ color: `${baseColor}90` }}
-                >
-                  Updated on {new Date(resume.updatedAt).toLocaleDateString()}
-                </p>
-
-                {/* Actions */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1 right-1 hidden group-hover:flex items-center gap-1"
-                >
-                  <TrashIcon
-                    onClick={() => {
-                      deleteResume(resume._id);
-                    }}
-                    className="size-7 p-1.5 hover:bg-gray-800/80 rounded text-gray-300 transition-colors"
-                  />
-                  <PencilIcon
-                    onClick={() => {
-                      setEditResumeId(resume._id);
-                      setTitle(resume.title);
-                    }}
-                    className="size-7 p-1.5 hover:bg-gray-800/80 rounded text-gray-300 transition-colors"
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-
         {showUploadResume && (
           <form
             onSubmit={uploadResume}
@@ -316,8 +284,8 @@ function Dashboard() {
                   Select Resume File
                   <div
                     className="flex flex-col items-center justify-center gap-2 border group text-gray-400 border-gray-600 border-dashed
-rounded-md p-4 py-10 my-4 hover:border-green-500
-hover:text-green-400 cursor-pointer transition-colors bg-gray-800/50"
+ rounded-md p-4 py-10 my-4 hover:border-green-500
+ hover:text-green-400 cursor-pointer transition-colors bg-gray-800/50"
                   >
                     {resume ? (
                       <p className="text-green-400">{resume.name}</p>
@@ -354,11 +322,117 @@ hover:text-green-400 cursor-pointer transition-colors bg-gray-800/50"
           </form>
         )}
 
+        {showNewResumeModal && (
+          <form
+            onSubmit={generateResume}
+            onClick={() => setShowNewResumeModal(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-gray-900 border border-gray-700 shadow-xl rounded-lg w-full max-w-2xl p-6"
+            >
+              <h2 className="text-xl font-bold mb-2 text-gray-100">
+                Create New Resume
+              </h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Provide details about the job you're applying for, and we'll generate a tailored resume from your Arsenal.
+              </p>
+              
+              <div className="space-y-4">
+                {/* Job Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Job Description
+                  </label>
+                  <textarea
+                    value={newResumeData.jobDescription}
+                    onChange={(e) => setNewResumeData({...newResumeData, jobDescription: e.target.value})}
+                    placeholder="Paste the job description here..."
+                    className="w-full h-32 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors resize-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Experience Level */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Experience Level
+                    </label>
+                    <select
+                      value={newResumeData.experienceLevel}
+                      onChange={(e) => setNewResumeData({...newResumeData, experienceLevel: e.target.value})}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none"
+                    >
+                      <option value="Entry Level">Entry Level (0-2 years)</option>
+                      <option value="Mid Level">Mid Level (3-5 years)</option>
+                      <option value="Senior Level">Senior Level (5+ years)</option>
+                      <option value="Executive">Executive</option>
+                    </select>
+                  </div>
+
+                  {/* Job Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Job Category
+                    </label>
+                    <select
+                      value={newResumeData.category}
+                      onChange={(e) => setNewResumeData({...newResumeData, category: e.target.value, subCategory: ""})}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none"
+                    >
+                      <option value="" disabled>Select Category</option>
+                      {Object.keys(jobCategories).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sub Category */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Sub Category
+                    </label>
+                    <select
+                      value={newResumeData.subCategory}
+                      onChange={(e) => setNewResumeData({...newResumeData, subCategory: e.target.value})}
+                      disabled={!newResumeData.category}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="" disabled>Select Sub-category</option>
+                      {newResumeData.category && jobCategories[newResumeData.category].map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8">
+                <button 
+                  type="submit"
+                  disabled={!newResumeData.jobDescription || !newResumeData.category || !newResumeData.subCategory}
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                >
+                  <Sparkles className="size-5" />
+                  <span>Generate Tailored Resume</span>
+                </button>
+              </div>
+
+              <XIcon
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 cursor-pointer transition-colors"
+                onClick={() => setShowNewResumeModal(false)}
+              />
+            </div>
+          </form>
+        )}
+
         {editResumeId && (
           <form
             onSubmit={editTitle}
             onClick={() => setEditResumeId("")}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <div
               onClick={(e) => e.stopPropagation()}
