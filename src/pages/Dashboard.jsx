@@ -13,6 +13,7 @@ import {
   BarChart3,
   Sparkles,
   ArrowRight,
+  Database,
 } from "lucide-react";
 import { dummyResumeData } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
@@ -256,6 +257,21 @@ function Dashboard() {
             <UploadCloudIcon className="size-11 p-2.5 bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-full transition-all duration-300" />
             <p className="text-sm group-hover:text-purple-400 transition-all duration-300">
               Upload Existing
+            </p>
+          </button>
+
+          {/* View Arsenal */}
+          <button
+            onClick={() => navigate("/app/view-arsenal")}
+            className="w-full sm:max-w-36 h-48 flex flex-col items-center justify-center
+          rounded-lg gap-2 bg-gray-900 text-gray-300
+          border border-dashed border-gray-700
+          group hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20
+          transition-all duration-300"
+          >
+            <Database className="size-11 p-2.5 bg-gradient-to-br from-cyan-400 to-cyan-600 text-white rounded-full transition-all duration-300" />
+            <p className="text-sm group-hover:text-cyan-400 transition-all duration-300">
+              View Arsenal
             </p>
           </button>
         </div>
