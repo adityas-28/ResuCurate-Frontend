@@ -164,19 +164,19 @@ function NavbarMain() {
 
   return (
     <>
-      <div className="bg-gray-950 rounded-3xl backdrop-blur-sm relative z-40">
+      <div className="bg-gray-950 rounded-3xl backdrop-blur-sm relative z-40 -m-8 max-w-7xl mx-auto">
         <nav className="flex items-center justify-between max-w-7xl mx-auto px-4 py-3">
           
           {/* Logo */}
           <Link 
             to="/app"
-            className="group relative"
+            className="group relative p-0 -my-8"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0  rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <img
               src="/logo.png"
               alt="logo"
-              className="h-12 w-12 object-contain relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:brightness-110"
+              className="h-50 w-50 object-contain relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:brightness-110 p-0 m-0"
             />
           </Link>
 

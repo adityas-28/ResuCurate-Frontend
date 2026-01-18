@@ -31,10 +31,10 @@ export default function Navbar({
           <img
             src="/logo.png"
             alt="logo"
-            className="h-14 w-14 object-contain"
+            className="h-42 w-42 object-contain"
           />
         </Link>
-        <div className="hidden gap-6 md:flex">
+        <div className="hidden gap-6 md:flex m-3 p-1">
           {[
             { label: "Home", onClick: onHomeClick },
             { label: "Features", onClick: onFeaturesClick },
@@ -46,7 +46,7 @@ export default function Navbar({
               onClick={onClick}
               className="group relative overflow-hidden text-left"
             >
-              <span className="block transition-transform duration-300 group-hover:-translate-y-full text-sm hover:text-indigo-400">
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full text-sm hover:text-gray-300">
                 {label}
               </span>
               <span className="absolute left-0 top-full block transition-transform duration-300 group-hover:-translate-y-full">

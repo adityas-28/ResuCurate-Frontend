@@ -6,7 +6,7 @@ function Layout() {
   return (
     <>
       {" "}
-      <div className="bg-slate-950 p-2">
+      <div className="bg-gray-950 p-2 w-auto">
         <NavbarMain />
         <Outlet />
       </div>

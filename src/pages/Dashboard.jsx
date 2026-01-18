@@ -120,110 +120,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="bg-gray-950 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Overview Section */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* ATS Overview Card */}
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Average ATS Score */}
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-indigo-500/50 transition-all duration-300">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="size-5 text-indigo-400" />
-                      <span className="text-sm text-gray-400">Average ATS Score</span>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-white">{averageATSScore}</span>
-                    <span className="text-sm text-gray-400">/100</span>
-                  </div>
-                  <div className="mt-2 w-full bg-gray-700 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${averageATSScore}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Total Resumes */}
-                <button
-                  onClick={() => navigate("/app/my-resumes")}
-                  className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-purple-500/50 transition-all duration-300 text-left group"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="size-5 text-purple-400" />
-                      <span className="text-sm text-gray-400">Total Resumes</span>
-                    </div>
-                    <ArrowRight className="size-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-white">{totalResumes}</span>
-                    <span className="text-sm text-gray-400">in arsenal</span>
-                  </div>
-                </button>
-
-                {/* Last Scanned Resume */}
-                {lastScannedResume && (
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-cyan-500/50 transition-all duration-300">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="size-5 text-cyan-400" />
-                        <span className="text-sm text-gray-400">Last Scanned</span>
-                      </div>
-                    </div>
-                    <p className="text-white font-medium truncate">{lastScannedResume.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(lastScannedResume.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                {/* Score Breakdown */}
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-green-500/50 transition-all duration-300">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="size-5 text-green-400" />
-                      <span className="text-sm text-gray-400">Score Breakdown</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {Object.entries(scoreBreakdown).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400 capitalize">{key}</span>
-                        <span className="text-xs font-medium text-white">{value}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3 lg:w-64">
-                <button
-                  onClick={() => navigate("/app/generate")}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 flex items-center justify-center gap-2 group"
-                >
-                  <Sparkles className="size-5" />
-                  <span>New Resume</span>
-                  <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button
-                  onClick={() => navigate("/app/ats-scan")}
-                  className="w-full bg-gray-800 border border-gray-700 hover:border-indigo-500/50 text-gray-300 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
-                >
-                  <Sparkles className="size-5 text-indigo-400" />
-                  <span>AI Reviews</span>
-                  <ArrowRight className="size-4 text-gray-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <div className="bg-gray-950 min-h-screen max-w-7xl mx-auto px-4 py-8">
         {/* My Arsenal Section */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-4">My Arsenal</h2>
@@ -299,9 +196,7 @@ function Dashboard() {
                 >
                   Select Resume File
                   <div
-                    className="flex flex-col items-center justify-center gap-2 border group text-gray-400 border-gray-600 border-dashed
- rounded-md p-4 py-10 my-4 hover:border-green-500
- hover:text-green-400 cursor-pointer transition-colors bg-gray-800/50"
+                    className="flex flex-col items-center justify-center gap-2 border group text-gray-400 border-gray-600 border-dashed rounded-md p-4 py-10 my-4 :border-green-500 hover:text-green-400 cursor-pointer transition-colors bg-gray-800/50"
                   >
                     {resume ? (
                       <p className="text-green-400">{resume.name}</p>
@@ -479,7 +374,108 @@ function Dashboard() {
             </div>
           </form>
         )}
-      </div>
+        
+        {/* Overview Section */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* ATS Overview Card */}
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Average ATS Score */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-indigo-500/50 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="size-5 text-indigo-400" />
+                      <span className="text-sm text-gray-400">Average ATS Score</span>
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-white">{averageATSScore}</span>
+                    <span className="text-sm text-gray-400">/100</span>
+                  </div>
+                  <div className="mt-2 w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${averageATSScore}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Total Resumes */}
+                <button
+                  onClick={() => navigate("/app/my-resumes")}
+                  className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-purple-500/50 transition-all duration-300 text-left group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="size-5 text-purple-400" />
+                      <span className="text-sm text-gray-400">Total Resumes</span>
+                    </div>
+                    <ArrowRight className="size-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-white">{totalResumes}</span>
+                    <span className="text-sm text-gray-400">in arsenal</span>
+                  </div>
+                </button>
+
+                {/* Last Scanned Resume */}
+                {lastScannedResume && (
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-cyan-500/50 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-5 text-cyan-400" />
+                        <span className="text-sm text-gray-400">Last Scanned</span>
+                      </div>
+                    </div>
+                    <p className="text-white font-medium truncate">{lastScannedResume.title}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(lastScannedResume.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+
+                {/* Score Breakdown */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-green-500/50 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="size-5 text-green-400" />
+                      <span className="text-sm text-gray-400">Score Breakdown</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(scoreBreakdown).map(([key, value]) => (
+                      <div key={key} className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400 capitalize">{key}</span>
+                        <span className="text-xs font-medium text-white">{value}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3 lg:w-64">
+                <button
+                  onClick={() => navigate("/app/generate")}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 flex items-center justify-center gap-2 group"
+                >
+                  <Sparkles className="size-5" />
+                  <span>New Resume</span>
+                  <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button
+                  onClick={() => navigate("/app/ats-scan")}
+                  className="w-full bg-gray-800 border border-gray-700 hover:border-indigo-500/50 text-gray-300 hover:text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                >
+                  <Sparkles className="size-5 text-indigo-400" />
+                  <span>AI Reviews</span>
+                  <ArrowRight className="size-4 text-gray-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
   );
 }
