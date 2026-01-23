@@ -39,30 +39,91 @@ function AtsScan() {
       setUploadedFile(file);
     } else {
       alert("Please upload a PDF file");
-    }
+    }    
   };
 
   const scanResume = async (resumeId = null, isUploaded = false) => {
-    setScanningResumeId(resumeId || "uploaded");
-    setShowResults(false);
-    setScanResults(null);
+    // For existing resumes, you can implement API call here if needed
+    // For now, keeping the navigation behavior for existing resumes
+    if (resumeId && !isUploaded) {
+      setScanningResumeId(resumeId);
+      setShowResults(false);
+      setScanResults(null);
 
-    // Simulate ATS scanning process
-    setTimeout(() => {
-      // Navigate to review page with resume ID
-      // For uploaded files, use a generated ID
-      const reviewResumeId = resumeId || `uploaded-${Date.now()}`;
-      navigate(`/review/${reviewResumeId}`);
-    }, 2000);
+      // Simulate ATS scanning process for existing resumes
+      setTimeout(() => {
+        const reviewResumeId = resumeId;
+        navigate(`/review/${reviewResumeId}`);
+      }, 2000);
+    }
+    // For uploaded files, the scanUploadedResume function handles it
   };
 
-  const scanUploadedResume = () => {
+  const scanUploadedResume = async () => {
     if (!uploadedFile) {
       alert("Please upload a resume file first");
       return;
     }
+    
     setShowUploadModal(false);
-    scanResume(null, true);
+    setScanningResumeId("uploaded");
+    setShowResults(false);
+    setScanResults(null);
+
+    try {
+      // Create FormData to send the file
+      const formData = new FormData();
+      formData.append("file", uploadedFile);
+
+      // Get API URL from environment variable or use default
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const apiEndpoint = `${API_URL}/api/ats-score`;
+
+      // Call the API endpoint
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to scan resume";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      // Format the response to match the expected structure
+      setScanResults({
+        resumeName: data.resumeName || uploadedFile.name,
+        overallScore: data.overallScore || 0,
+        breakdown: data.breakdown || {},
+        strengths: data.strengths || [],
+        improvements: data.improvements || [],
+        links: data.links || {},
+        field: data.field || "Unknown"
+      });
+      
+      setShowResults(true);
+      setScanningResumeId(null);
+    } catch (error) {
+      console.error("Error scanning resume:", error);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message;
+      if (error.message === "Failed to fetch") {
+        errorMessage = "Unable to connect to the server. Please make sure the backend server is running on port 8000.";
+      }
+      
+      alert(`Error scanning resume: ${errorMessage}`);
+      setScanningResumeId(null);
+    }
   };
 
   const getScoreColor = (score) => {
