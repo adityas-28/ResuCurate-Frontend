@@ -32,7 +32,7 @@ function Footer() {
         <div className="flex items-center gap-6 pt-2">
           
           {/* Twitter / X */}
-          <a href="#" className="hover:text-indigo-400 transition">
+          {/* <a href="#" className="hover:text-indigo-400 transition">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -41,10 +41,10 @@ function Footer() {
             >
               <path d="M18.244 2.25h3.308l-7.227 8.26L22.827 21.75h-6.588l-5.157-6.724L4.99 21.75H1.68l7.73-8.835L1.173 2.25h6.757l4.664 6.086L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
             </svg>
-          </a>
+          </a> */}
 
           {/* LinkedIn */}
-          <a href="#" className="hover:text-indigo-400 transition">
+          <a href="https://www.linkedin.com/in/adityaa-singh28/" className="hover:text-indigo-400 transition">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -56,7 +56,7 @@ function Footer() {
           </a>
 
           {/* GitHub */}
-          <a href="#" className="hover:text-indigo-400 transition">
+          <a href="https://github.com/adityas-28" className="hover:text-indigo-400 transition">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
