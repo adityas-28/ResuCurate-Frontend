@@ -13,6 +13,7 @@ import ViewArsenal from "./pages/ViewArsenal";
 import ReviewResume from "./pages/ReviewResume";
 import Notify from "./components/Notify";
 import NotFound from "./components/NotFound";
+import ProtectedRoute from "./components/ProtectedRoutes";
 // import Settings from './pages/Settings'
 // import Templates from './pages/Templates'
 // import NewTemplate from './pages/NewTemplate'
@@ -25,7 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
 
-        <Route path="app" element={<Layout />}>
+        <Route path="app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
 
           <Route path="dashboard" element={<Dashboard />} />

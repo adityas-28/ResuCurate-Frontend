@@ -1,5 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 
 function Login() {
   const navigate = useNavigate();
@@ -19,10 +22,81 @@ function Login() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  React.useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          navigate("/app/dashboard");
+        }
+      },
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/notify");
+
+    if (state === "login") {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      navigate("/app/dashboard");
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
+        },
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      navigate("/app/dashboard");
+    }
   };
+
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/app/dashboard`,
+      },
+    });
+
+    if (error) {
+      alert(error.message);
+    }
+  };
+
+  const loginWithGithub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/app/dashboard`,
+      },
+    });
+
+    if (error) {
+      alert(error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-950 focus-within:ring-indigo-500/60">
       <form
@@ -50,11 +124,8 @@ function Login() {
               strokeLinejoin="round"
             >
               {" "}
-              <circle
-                cx="12"
-                cy="8"
-                r="5"
-              /> <path d="M20 21a8 8 0 0 0-16 0" />{" "}
+              <circle cx="12" cy="8" r="5" />{" "}
+              <path d="M20 21a8 8 0 0 0-16 0" />{" "}
             </svg>
             <input
               type="text"
@@ -136,6 +207,26 @@ function Login() {
         >
           {state === "login" ? "Login" : "Sign up"}
         </button>
+
+        <div className="mt-4 text-gray-400 text-sm">or continue with</div>
+
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            type="button"
+            onClick={loginWithGoogle}
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-600 transition"
+          >
+            <FcGoogle size={25} />
+          </button>
+
+          <button
+            type="button"
+            onClick={loginWithGithub}
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-600 transition"
+          >
+            <FaGithub size={25} className="text-white" />
+          </button>
+        </div>
 
         <p
           onClick={() =>

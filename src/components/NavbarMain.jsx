@@ -1,69 +1,8 @@
-// import React from "react";
-// import { Link, useNavigate } from "react-router-dom";
-
-// function NavbarMain() {
-//   const user = { name: "User " };
-//   const navigate = useNavigate();
-
-//   const logoutUser = () => {
-//     navigate("/");
-//   };
-//   return (
-//     <>
-//       <div className="bg-cyan-950 border-b border-b-cyan-500 shadow-xl rounded-3xl p-1">
-//         <nav className="flex items-center justify-between max-w-7xl mx-auto px-4 py-2">
-//           <Link to="/app" className="hover:opacity-80 transition-opacity">
-//             <img
-//               src="/logo.png"
-//               alt="logo"
-//               className="h-12 w-12 object-contain"
-//             />
-//           </Link>
-//           <div className="hidden gap-6 md:flex text-white">
-//             {[
-//               { label: "Dashboard", onClick: () => navigate("/") },
-//               { label: "Generate", onClick: () => navigate("/builder") },
-//               { label: "ATS Scan", onClick: () => navigate("/ats-scan") },
-//               { label: "My Resumes", onClick: () => navigate("/my-resumes") },
-//             ].map(({ label, onClick }) => (
-//               <button
-//                 key={label}
-//                 onClick={onClick}
-//                 className="group relative overflow-hidden text-left"
-//               >
-//                 <span className="block transition-transform duration-300 group-hover:-translate-y-full text-sm hover:text-indigo-400">
-//                   {label}
-//                 </span>
-//                 <span className="absolute left-0 top-full block transition-transform duration-300 group-hover:-translate-y-full">
-//                   {label}
-//                 </span>
-//               </button>
-//             ))}
-//           </div>
-//           <div className="flex items-center gap-6 text-sm">
-//             <p className="max-sm:hidden text-gray-300 font-medium">
-//               Hi, <span className="text-white">{user?.name}</span>
-//             </p>
-//             <button
-//               onClick={logoutUser}
-//               className="rounded-full border bg-slate-700 border- bg-slate-200 px-5 py-1.5 text-sm font-medium text-white transition-all duration-300 hover:bg-gray-800 hover:border-slate-300 hover:shadow-lg hover:shadow-gray-900/50 active:scale-95"
-//             >
-//               Logout
-//             </button>
-//           </div>
-//         </nav>
-//       </div>
-//     </>
-//   );
-// }
-
-// export default NavbarMain;
-
-
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { XIcon, User, Mail, Briefcase, MapPin, Camera } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const NavTab = ({ label, onClick, setPosition, isActive }) => {
   const ref = useRef(null);
@@ -83,8 +22,8 @@ const NavTab = ({ label, onClick, setPosition, isActive }) => {
       }}
       className={`relative z-10 cursor-pointer px-4 py-2 text-sm font-medium transition-colors duration-200
         ${
-          isActive 
-            ? "text-white font-semibold hover:text-black" 
+          isActive
+            ? "text-white font-semibold hover:text-black"
             : "text-gray-300 hover:text-black"
         }`}
     >
@@ -107,14 +46,26 @@ const Cursor = ({ position }) => {
 };
 
 function NavbarMain() {
-  const [user, setUser] = useState({ 
-    name: "User",
-    email: "user@resucurate.com",
-    role: "Premium Member",
-    location: "Global",
-    profileImage: null
-  });
-  
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+
+      if (data?.user) {
+        setUser({
+          name: data.user.user_metadata?.name,
+          email: data.user.email,
+          role: data.user.user_metadata?.role,
+          location: data.user.user_metadata?.location,
+          profileImage: data.user.user_metadata?.profileImage,
+        });
+      }
+    };
+
+    getUser();
+  }, []);
+
   const navigate = useNavigate();
   const location = useLocation();
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -127,7 +78,12 @@ function NavbarMain() {
     opacity: 0,
   });
 
-  const logoutUser = () => {
+  const logoutUser = async () => {
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+
+    if (!confirmLogout) return;
+
+    await supabase.auth.signOut();
     navigate("/");
   };
 
@@ -166,12 +122,8 @@ function NavbarMain() {
     <>
       <div className="bg-gray-950 rounded-3xl backdrop-blur-sm relative z-40 -m-8 max-w-7xl mx-auto">
         <nav className="flex items-center justify-between max-w-7xl mx-auto px-4 py-3">
-          
           {/* Logo */}
-          <Link 
-            to="/app"
-            className="group relative p-0 -my-8"
-          >
+          <Link to="/app" className="group relative p-0 -my-8">
             <div className="absolute inset-0  rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <img
               src="/logo.png"
@@ -182,9 +134,7 @@ function NavbarMain() {
 
           {/* Sliding Tabs */}
           <ul
-            onMouseLeave={() =>
-              setPosition((pv) => ({ ...pv, opacity: 0 }))
-            }
+            onMouseLeave={() => setPosition((pv) => ({ ...pv, opacity: 0 }))}
             className="relative hidden md:flex w-fit rounded-full bg-black/80 backdrop-blur-md p-1.5 border border-slate-600/50 shadow-inner"
           >
             {tabs.map((tab) => (
@@ -202,19 +152,26 @@ function NavbarMain() {
 
           {/* User Section */}
           <div className="flex items-center gap-4 sm:gap-6 text-sm">
-            <button 
+            <button
               onClick={() => setShowProfileModal(true)}
               className="hidden sm:flex items-center gap-2 group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/50 group-hover:border-indigo-400 transition-colors overflow-hidden">
-                {user.profileImage ? (
-                  <img src={user.profileImage} alt="User" className="w-full h-full object-cover" />
+                {user?.profileImage ? (
+                  <img
+                    src={user?.profileImage}
+                    alt="User"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <User className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300" />
                 )}
               </div>
               <p className="text-gray-400 group-hover:text-gray-200 transition-colors">
-                Hi, <span className="text-white font-semibold group-hover:text-indigo-400 transition-colors">{user.name}</span>
+                Hi,{" "}
+                <span className="text-white font-semibold group-hover:text-indigo-400 transition-colors">
+                  {user?.name}
+                </span>
               </p>
             </button>
             <button
@@ -267,8 +224,18 @@ function NavbarMain() {
                 <div className="relative -mt-16 mb-6 flex flex-col items-center">
                   <div className="relative group">
                     <div className="w-32 h-32 rounded-full border-4 border-gray-900 bg-gray-800 flex items-center justify-center shadow-xl overflow-hidden">
-                      {(isEditing ? editForm.profileImage : user.profileImage) ? (
-                        <img src={isEditing ? editForm.profileImage : user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      {(
+                        isEditing ? editForm?.profileImage : user?.profileImage
+                      ) ? (
+                        <img
+                          src={
+                            isEditing
+                              ? editForm?.profileImage
+                              : user?.profileImage
+                          }
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <User className="w-16 h-16 text-indigo-400" />
                       )}
@@ -276,32 +243,44 @@ function NavbarMain() {
                     {isEditing && (
                       <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                         <Camera className="w-8 h-8 text-white" />
-                        <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageChange}
+                        />
                       </label>
                     )}
                   </div>
-                  
+
                   {isEditing ? (
-                     <div className="mt-4 w-full space-y-3">
-                       <input
-                         type="text"
-                         value={editForm.name}
-                         onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold text-xl focus:border-indigo-500 outline-none"
-                         placeholder="Name"
-                       />
-                       <input
-                         type="text"
-                         value={editForm.role}
-                         onChange={(e) => setEditForm({...editForm, role: e.target.value})}
-                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-indigo-400 text-center font-medium focus:border-indigo-500 outline-none"
-                         placeholder="Role"
-                       />
-                     </div>
+                    <div className="mt-4 w-full space-y-3">
+                      <input
+                        type="text"
+                        value={editForm?.name}
+                        disabled={true}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold text-xl focus:border-indigo-500 outline-none"
+                        placeholder="Name"
+                      />
+                      <input
+                        type="text"
+                        value={editForm?.role}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, role: e.target.value })
+                        }
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-indigo-400 text-center font-medium focus:border-indigo-500 outline-none"
+                        placeholder="Role"
+                      />
+                    </div>
                   ) : (
                     <>
-                      <h2 className="mt-4 text-2xl font-bold text-white">{user.name}</h2>
-                      <p className="text-indigo-400 font-medium">{user.role}</p>
+                      <h2 className="mt-4 text-2xl font-bold text-white">
+                        {user?.name}
+                      </h2>
+                      <p className="text-indigo-400 font-medium">{user?.role}</p>
                     </>
                   )}
                 </div>
@@ -312,16 +291,21 @@ function NavbarMain() {
                       <Mail className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                        Email
+                      </p>
                       {isEditing ? (
-                         <input
-                           type="email"
-                           value={editForm.email}
-                           onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                           className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
-                         />
+                        <input
+                          type="email"
+                          disabled={true}
+                          value={editForm?.email}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, email: e.target.value })
+                          }
+                          className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
+                        />
                       ) : (
-                        <p className="text-gray-200">{user.email}</p>
+                        <p className="text-gray-200">{user?.email}</p>
                       )}
                     </div>
                   </div>
@@ -330,17 +314,24 @@ function NavbarMain() {
                     <div className="p-2 rounded-lg bg-gray-800 text-gray-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors">
                       <MapPin className="w-5 h-5" />
                     </div>
-                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Location</p>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                        Location
+                      </p>
                       {isEditing ? (
-                         <input
-                           type="text"
-                           value={editForm.location}
-                           onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                           className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
-                         />
+                        <input
+                          type="text"
+                          value={editForm?.location}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              location: e.target.value,
+                            })
+                          }
+                          className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
+                        />
                       ) : (
-                        <p className="text-gray-200">{user.location}</p>
+                        <p className="text-gray-200">{user?.location}</p>
                       )}
                     </div>
                   </div>
@@ -349,17 +340,21 @@ function NavbarMain() {
                     <div className="p-2 rounded-lg bg-gray-800 text-gray-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors">
                       <Briefcase className="w-5 h-5" />
                     </div>
-                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Role</p>
-                       {isEditing ? (
-                         <input
-                           type="text"
-                           value={editForm.role}
-                           onChange={(e) => setEditForm({...editForm, role: e.target.value})}
-                           className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
-                         />
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                        Role
+                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editForm?.role}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, role: e.target.value })
+                          }
+                          className="w-full bg-transparent border-b border-gray-600 focus:border-indigo-500 outline-none text-gray-200 py-0.5"
+                        />
                       ) : (
-                        <p className="text-gray-200">{user.role}</p>
+                        <p className="text-gray-200">{user?.role}</p>
                       )}
                     </div>
                   </div>
@@ -368,13 +363,13 @@ function NavbarMain() {
                 <div className="mt-8 flex gap-3">
                   {isEditing ? (
                     <>
-                      <button 
+                      <button
                         onClick={handleCancel}
                         className="flex-1 py-2.5 rounded-lg border border-gray-700 text-gray-300 font-medium hover:bg-gray-800 transition-colors"
                       >
                         Cancel
                       </button>
-                      <button 
+                      <button
                         onClick={handleSave}
                         className="flex-1 py-2.5 rounded-lg bg-green-600 text-white font-medium hover:bg-green-500 shadow-lg shadow-green-500/25 transition-colors"
                       >
@@ -383,15 +378,15 @@ function NavbarMain() {
                     </>
                   ) : (
                     <>
-                      <button 
-                        onClick={() => setShowProfileModal(false)} 
+                      <button
+                        onClick={() => setShowProfileModal(false)}
                         className="flex-1 py-2.5 rounded-lg border border-gray-700 text-gray-300 font-medium hover:bg-gray-800 transition-colors"
                       >
                         Close
                       </button>
-                      <button 
-                         onClick={handleEditClick}
-                         className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 shadow-lg shadow-indigo-500/25 transition-colors"
+                      <button
+                        onClick={handleEditClick}
+                        className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 shadow-lg shadow-indigo-500/25 transition-colors"
                       >
                         Edit Profile
                       </button>

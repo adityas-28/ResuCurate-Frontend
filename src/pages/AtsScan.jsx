@@ -39,7 +39,7 @@ function AtsScan() {
       setUploadedFile(file);
     } else {
       alert("Please upload a PDF file");
-    }    
+    }
   };
 
   const scanResume = async (resumeId = null, isUploaded = false) => {
@@ -64,7 +64,7 @@ function AtsScan() {
       alert("Please upload a resume file first");
       return;
     }
-    
+
     setShowUploadModal(false);
     setScanningResumeId("uploaded");
     setShowResults(false);
@@ -79,11 +79,14 @@ function AtsScan() {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const apiEndpoint = `${API_URL}/api/ats-score`;
 
+      // console.log("apiEndpoint: ", apiEndpoint);
+      // console.log("formData: ", formData);
       // Call the API endpoint
       const response = await fetch(apiEndpoint, {
         method: "POST",
         body: formData,
       });
+      // console.log("response: ", response);
 
       if (!response.ok) {
         let errorMessage = "Failed to scan resume";
@@ -98,7 +101,7 @@ function AtsScan() {
       }
 
       const data = await response.json();
-      
+
       // Format the response to match the expected structure
       setScanResults({
         resumeName: data.resumeName || uploadedFile.name,
@@ -107,20 +110,21 @@ function AtsScan() {
         strengths: data.strengths || [],
         improvements: data.improvements || [],
         links: data.links || {},
-        field: data.field || "Unknown"
+        field: data.field || "Unknown",
       });
-      
+
       setShowResults(true);
       setScanningResumeId(null);
     } catch (error) {
       console.error("Error scanning resume:", error);
-      
+
       // Provide more helpful error messages
       let errorMessage = error.message;
       if (error.message === "Failed to fetch") {
-        errorMessage = "Unable to connect to the server. Please make sure the backend server is running on port 8000.";
+        errorMessage =
+          "Unable to connect to the server. Please make sure the backend server is running on port 8000.";
       }
-      
+
       alert(`Error scanning resume: ${errorMessage}`);
       setScanningResumeId(null);
     }
@@ -143,9 +147,12 @@ function AtsScan() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">ATS Resume Scanner</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            ATS Resume Scanner
+          </h1>
           <p className="text-gray-400">
-            Upload or select a resume to get instant ATS score and optimization suggestions
+            Upload or select a resume to get instant ATS score and optimization
+            suggestions
           </p>
         </div>
 
@@ -158,8 +165,12 @@ function AtsScan() {
                   <UploadCloud className="size-6 text-indigo-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">Upload Resume</h2>
-                  <p className="text-sm text-gray-400">Scan a new resume file</p>
+                  <h2 className="text-xl font-semibold text-white">
+                    Upload Resume
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    Scan a new resume file
+                  </p>
                 </div>
               </div>
               <button
@@ -175,7 +186,9 @@ function AtsScan() {
 
         {/* Resumes List */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Your Resumes</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">
+            Your Resumes
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allResumes.map((resume) => (
               <div
@@ -192,7 +205,8 @@ function AtsScan() {
                         {resume.title}
                       </h3>
                       <p className="text-xs text-gray-400">
-                        Updated {new Date(resume.updatedAt).toLocaleDateString()}
+                        Updated{" "}
+                        {new Date(resume.updatedAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -225,7 +239,9 @@ function AtsScan() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Scan Results</h2>
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    Scan Results
+                  </h2>
                   <p className="text-gray-400">{scanResults.resumeName}</p>
                 </div>
                 <button
@@ -237,13 +253,17 @@ function AtsScan() {
               </div>
 
               {/* Overall Score */}
-              <div className={`mb-6 p-6 rounded-lg border ${getScoreBgColor(scanResults.overallScore)}`}>
+              <div
+                className={`mb-6 p-6 rounded-lg border ${getScoreBgColor(scanResults.overallScore)}`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <TrendingUp className="size-6 text-indigo-400" />
                     <span className="text-gray-400">Overall ATS Score</span>
                   </div>
-                  <span className={`text-4xl font-bold ${getScoreColor(scanResults.overallScore)}`}>
+                  <span
+                    className={`text-4xl font-bold ${getScoreColor(scanResults.overallScore)}`}
+                  >
                     {scanResults.overallScore}
                     <span className="text-xl text-gray-400">/100</span>
                   </span>
@@ -254,8 +274,8 @@ function AtsScan() {
                       scanResults.overallScore >= 80
                         ? "bg-gradient-to-r from-green-500 to-green-400"
                         : scanResults.overallScore >= 60
-                        ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
-                        : "bg-gradient-to-r from-red-500 to-red-400"
+                          ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                          : "bg-gradient-to-r from-red-500 to-red-400"
                     }`}
                     style={{ width: `${scanResults.overallScore}%` }}
                   />
@@ -273,7 +293,9 @@ function AtsScan() {
                       <span className="text-sm text-gray-400 capitalize">
                         {key.replace(/([A-Z])/g, " $1").trim()}
                       </span>
-                      <span className={`text-lg font-semibold ${getScoreColor(value)}`}>
+                      <span
+                        className={`text-lg font-semibold ${getScoreColor(value)}`}
+                      >
                         {value}%
                       </span>
                     </div>
@@ -283,8 +305,8 @@ function AtsScan() {
                           value >= 80
                             ? "bg-green-500"
                             : value >= 60
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
                         }`}
                         style={{ width: `${value}%` }}
                       />
@@ -302,7 +324,10 @@ function AtsScan() {
                   </div>
                   <ul className="space-y-2">
                     {scanResults.strengths.map((strength, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm text-gray-300">
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-sm text-gray-300"
+                      >
                         <span className="text-green-400 mt-1">•</span>
                         <span>{strength}</span>
                       </li>
@@ -313,11 +338,16 @@ function AtsScan() {
                 <div className="bg-gray-800/50 border border-yellow-500/30 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertCircle className="size-5 text-yellow-400" />
-                    <h3 className="text-white font-semibold">Areas for Improvement</h3>
+                    <h3 className="text-white font-semibold">
+                      Areas for Improvement
+                    </h3>
                   </div>
                   <ul className="space-y-2">
                     {scanResults.improvements.map((improvement, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm text-gray-300">
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-sm text-gray-300"
+                      >
                         <span className="text-yellow-400 mt-1">•</span>
                         <span>{improvement}</span>
                       </li>
@@ -339,7 +369,9 @@ function AtsScan() {
               onClick={(e) => e.stopPropagation()}
               className="relative bg-gray-900 border border-gray-700 shadow-xl rounded-lg w-full max-w-md p-6"
             >
-              <h2 className="text-xl font-bold mb-4 text-gray-100">Upload Resume for ATS Scan</h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-100">
+                Upload Resume for ATS Scan
+              </h2>
               <div className="mb-4">
                 <label
                   htmlFor="resume-upload-input"
@@ -348,13 +380,17 @@ function AtsScan() {
                   Select Resume File (PDF)
                 </label>
                 <div
-                  onClick={() => document.getElementById("resume-upload-input")?.click()}
+                  onClick={() =>
+                    document.getElementById("resume-upload-input")?.click()
+                  }
                   className="flex flex-col items-center justify-center gap-2 border border-gray-600 border-dashed rounded-md p-8 hover:border-indigo-500 hover:bg-gray-800/50 cursor-pointer transition-colors"
                 >
                   {uploadedFile ? (
                     <div className="text-center">
                       <FileText className="size-12 text-indigo-400 mx-auto mb-2" />
-                      <p className="text-green-400 font-medium">{uploadedFile.name}</p>
+                      <p className="text-green-400 font-medium">
+                        {uploadedFile.name}
+                      </p>
                       <p className="text-xs text-gray-400 mt-1">
                         {(uploadedFile.size / 1024).toFixed(2)} KB
                       </p>
@@ -362,8 +398,12 @@ function AtsScan() {
                   ) : (
                     <>
                       <UploadCloud className="size-12 text-gray-400" />
-                      <p className="text-gray-400">Click to upload PDF resume</p>
-                      <p className="text-xs text-gray-500">Max file size: 10MB</p>
+                      <p className="text-gray-400">
+                        Click to upload PDF resume
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Max file size: 10MB
+                      </p>
                     </>
                   )}
                 </div>
