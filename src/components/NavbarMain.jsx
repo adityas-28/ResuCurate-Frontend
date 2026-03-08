@@ -50,16 +50,19 @@ function NavbarMain() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
 
-      if (data?.user) {
-        setUser({
-          name: data.user.user_metadata?.name,
-          email: data.user.email,
-          role: data.user.user_metadata?.role,
-          location: data.user.user_metadata?.location,
-          profileImage: data.user.user_metadata?.profileImage,
-        });
+      if (!authData?.user) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (!error) {
+        setUser(data);
+        setEditForm(data);
       }
     };
 
@@ -92,8 +95,60 @@ function NavbarMain() {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setUser(editForm);
+  const handleSave = async () => {
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      alert("User not authenticated");
+      return;
+    }
+
+    const userId = authData.user.id;
+    let imagePath = user?.profile;
+
+    // Upload new profile image if user selected one
+    if (editForm.profileFile) {
+      const file = editForm.profileFile;
+      const filePath = `${userId}/${Date.now()}-${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile-pictures")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        alert(uploadError.message);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("profile-pictures")
+        .getPublicUrl(filePath);
+
+      imagePath = data.publicUrl;
+    }
+
+    // Update users table
+    const { error } = await supabase
+      .from("users")
+      .update({
+        role: editForm.role,
+        location: editForm.location,
+        profile: imagePath,
+      })
+      .eq("id", userId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    // Update local state
+    setUser((prev) => ({
+      ...prev,
+      role: editForm.role,
+      location: editForm.location,
+      profile: imagePath,
+    }));
+
     setIsEditing(false);
   };
 
@@ -104,10 +159,15 @@ function NavbarMain() {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setEditForm({ ...editForm, profileImage: imageUrl });
-    }
+    if (!file) return;
+
+    const preview = URL.createObjectURL(file);
+
+    setEditForm({
+      ...editForm,
+      profileImage: preview,
+      profileFile: file,
+    });
   };
 
   const tabs = [
@@ -157,9 +217,9 @@ function NavbarMain() {
               className="hidden sm:flex items-center gap-2 group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/50 group-hover:border-indigo-400 transition-colors overflow-hidden">
-                {user?.profileImage ? (
+                {user?.profile ? (
                   <img
-                    src={user?.profileImage}
+                    src={user.profile}
                     alt="User"
                     className="w-full h-full object-cover"
                   />
@@ -224,21 +284,21 @@ function NavbarMain() {
                 <div className="relative -mt-16 mb-6 flex flex-col items-center">
                   <div className="relative group">
                     <div className="w-32 h-32 rounded-full border-4 border-gray-900 bg-gray-800 flex items-center justify-center shadow-xl overflow-hidden">
-                      {(
-                        isEditing ? editForm?.profileImage : user?.profileImage
-                      ) ? (
-                        <img
-                          src={
-                            isEditing
-                              ? editForm?.profileImage
-                              : user?.profileImage
-                          }
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-16 h-16 text-indigo-400" />
-                      )}
+                      {(() => {
+                        const displayedImage = isEditing
+                          ? editForm?.profileImage || editForm?.profile
+                          : user?.profile;
+
+                        return displayedImage ? (
+                          <img
+                            src={displayedImage}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-16 h-16 text-indigo-400" />
+                        );
+                      })()}
                     </div>
                     {isEditing && (
                       <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
@@ -280,7 +340,9 @@ function NavbarMain() {
                       <h2 className="mt-4 text-2xl font-bold text-white">
                         {user?.name}
                       </h2>
-                      <p className="text-indigo-400 font-medium">{user?.role}</p>
+                      <p className="text-indigo-400 font-medium">
+                        {user?.role}
+                      </p>
                     </>
                   )}
                 </div>
