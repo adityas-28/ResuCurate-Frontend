@@ -1,78 +1,86 @@
-import React, { useRef } from "react";
-import LiquidEther from "../components/home/LiquidEther";
+import { Stars } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import React, { useEffect, useState } from "react";
+import {
+  useMotionTemplate,
+  useMotionValue,
+  motion,
+  animate,
+} from "framer-motion";
 
 import Navbar from "../components/home/Navbar";
 import Hero from "../components/home/Hero";
 import Features from "../components/home/Features";
 import Pricing from "../components/home/Pricing";
-import Feedback from "../components/Feedback";
 import Footer from "../components/home/Footer";
 
+const COLORS_TOP = [
+  "#660000",
+  "#20124d",
+  "#274e13",
+  "#4c1130",
+  "#1E67C6",
+  "#DD335C",
+  "#274e13",
+];
+
 export default function Home() {
-  const featuresRef = useRef(null);
-  const pricingRef = useRef(null);
-  const feedbackRef = useRef(null);
+  const color = useMotionValue(COLORS_TOP[0]);
+  const [showStars, setShowStars] = useState(true);
 
-  const scrollToFeatures = () => {
-    featuresRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  useEffect(() => {
+    animate(color, COLORS_TOP, {
+      ease: "easeInOut",
+      duration: 35,
+      repeat: Infinity,
+      repeatType: "mirror",
+    });
 
-  const scrollToPricing = () => {
-    pricingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+    // Disable stars on small screens
+    if (window.innerWidth < 768) {
+      setShowStars(false);
+    }
+  }, []);
 
-  const scrollToFeedback = () => {
-    feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const backgroundImage = useMotionTemplate`
+  radial-gradient(
+    100% 60% at 50% 0%,
+    ${color} 0%,
+    transparent 55%
+  ),
+  radial-gradient(
+    125% 105% at 50% 0%,
+    rgba(2, 6, 23, 1) 45%,
+    ${color} 100%
+  )
+  `;
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const border = useMotionTemplate`1px solid ${color}`;
+  const boxShadow = useMotionTemplate`0px 4px 24px ${color}`;
 
   return (
     <>
-      <section className="relative min-h-screen overflow-hidden bg-[#020617] text-gray-200">
-        
-        {/* Background animation */}
-        <div className="absolute inset-0 z-0">
-          <LiquidEther
-            colors={["#5227FF", "#FF9FFC", "#B19EEF"]}
-            mouseForce={30}
-            cursorSize={90}
-            isViscous={false}
-            viscous={50}
-            iterationsViscous={12}
-            iterationsPoisson={12}
-            resolution={0.25}
-            isBounce={true}
-            autoDemo={false}
-          />
-        </div>
+      <motion.section
+        style={{ backgroundImage }}
+        className="relative min-h-screen overflow-hidden bg-gray-950 text-gray-200"
+      >
+        {/* Background Stars */}
+        {showStars && (
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <Canvas dpr={[1, 1.5]}>
+              <Stars radius={50} count={800} factor={3} fade speed={1} />
+            </Canvas>
+          </div>
+        )}
 
         {/* Content */}
         <div className="relative z-10 px-4 py-24">
-          <Navbar
-            onHomeClick={scrollToTop}
-            onFeaturesClick={scrollToFeatures}
-            onPricingClick={scrollToPricing}
-            onFeedbackClick={scrollToFeedback}
-          />
-
-          <Hero />
-
-          <div ref={featuresRef}>
-            <Features />
-          </div>
-
-          <div ref={pricingRef}>
-            <Pricing />
-          </div>
-
-          <div ref={feedbackRef}>
-            <Feedback />
-          </div>
+          <Navbar />
+          <Hero border={border} boxShadow={boxShadow} />
+          <Features />
+          <Pricing />
         </div>
-      </section>
+      </motion.section>
 
       <Footer />
     </>
