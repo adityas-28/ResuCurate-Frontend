@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-import { Link } from "react-router-dom";
 import LiquidEther from "../components/home/LiquidEther";
 
 import Navbar from "../components/home/Navbar";
@@ -29,33 +28,28 @@ export default function Home() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
   return (
     <>
       <section className="relative min-h-screen overflow-hidden bg-[#020617] text-gray-200">
-        {/* Background layer */}
+        
+        {/* Background animation */}
         <div className="absolute inset-0 z-0">
           <LiquidEther
             colors={["#5227FF", "#FF9FFC", "#B19EEF"]}
-            mouseForce={35}
-            cursorSize={100}
+            mouseForce={30}
+            cursorSize={90}
             isViscous={false}
             viscous={50}
-            iterationsViscous={32}
-            iterationsPoisson={32}
-            resolution={0.5}
+            iterationsViscous={12}
+            iterationsPoisson={12}
+            resolution={0.25}
             isBounce={true}
-            autoDemo={true}
-            autoSpeed={0.5}
-            autoIntensity={2.2}
-            takeoverDuration={0.25}
-            autoResumeDelay={3000}
-            autoRampDuration={0.6}
+            autoDemo={false}
           />
-          {/* Dark overlay */}
-          {/* <div className="absolute inset-0 bg-black/10" /> */}
         </div>
 
-        {/* Content layer */}
+        {/* Content */}
         <div className="relative z-10 px-4 py-24">
           <Navbar
             onHomeClick={scrollToTop}
@@ -79,6 +73,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       <Footer />
     </>
   );
