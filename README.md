@@ -40,10 +40,6 @@ A modern, responsive React application for creating, managing, and optimizing re
    ```bash
    npm install
    ```
-   or
-   ```bash
-   yarn install
-   ```
 
 ## ⚙️ Environment Setup
 
