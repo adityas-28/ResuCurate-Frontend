@@ -18,6 +18,7 @@ import {
 import { dummyResumeData } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { events } from "@react-three/fiber";
+import { supabase } from "../lib/supabase";
 
 function Dashboard() {
   const colors = ["#9333ea", "#d97706", "#dc2626", "#0284c7", "#16a34a"];
@@ -28,6 +29,10 @@ function Dashboard() {
   const [title, setTitle] = useState("");
   const [resume, setResume] = useState(null);
   const [editResumeId, setEditResumeId] = useState("");
+
+  const [atsScans, setAtsScans] = useState([]);
+  const [lastScannedResume, setLastScannedResume] = useState(null);
+  const [resumesCount, setResumesCount] = useState(0);
 
   React.useEffect(() => {
     if (window.location.hash) {
@@ -127,15 +132,159 @@ function Dashboard() {
     loadAllResumes();
   }, []);
 
-  // Mock data for ATS Overview - replace with actual data from API
-  const averageATSScore = 78;
-  const totalResumes = allResumes.length;
-  const lastScannedResume = allResumes.length > 0 ? allResumes[0] : null;
+  useEffect(() => {
+    const loadResumesCount = async () => {
+      try {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError) {
+          console.error("Resumes count auth error:", authError);
+          return;
+        }
+
+        const userId = authData?.user?.id;
+        if (!userId) return;
+
+        const { count, error } = await supabase
+          .from("resumes")
+          .select("id", { count: "exact" })
+          .eq("user_id", userId);
+
+        if (error) {
+          console.error("Resumes count load error:", error);
+          return;
+        }
+
+        setResumesCount(count || 0);
+      } catch (err) {
+        console.error("Resumes count load failed:", err);
+      }
+    };
+
+    loadResumesCount();
+  }, []);
+
+  useEffect(() => {
+    const loadAtsScans = async () => {
+      try {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError) {
+          console.error("ATS load auth error:", authError);
+          return;
+        }
+        const userId = authData?.user?.id;
+        if (!userId) return;
+
+        const { data, error } = await supabase
+          .from("ats_scans")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error("ATS scans load error:", error);
+          return;
+        }
+
+        setAtsScans(data || []);
+      } catch (err) {
+        console.error("ATS scans load failed:", err);
+      }
+    };
+
+    loadAtsScans();
+  }, []);
+
+  useEffect(() => {
+    const loadLastScannedTitle = async () => {
+      if (!atsScans || atsScans.length === 0) {
+        setLastScannedResume(null);
+        return;
+      }
+
+      const last = atsScans[0];
+      const resumeId = last?.resume_id;
+      const updatedAt = last?.created_at;
+
+      if (!resumeId) {
+        setLastScannedResume({
+          title: "Uploaded resume scan",
+          updatedAt,
+        });
+        return;
+      }
+
+      try {
+        const { data: resumeRow, error } = await supabase
+          .from("resumes")
+          .select("file_path, created_at")
+          .eq("id", resumeId)
+          .single();
+
+        if (error || !resumeRow?.file_path) {
+          setLastScannedResume({
+            title: `Resume ${resumeId}`,
+            updatedAt,
+          });
+          return;
+        }
+
+        const { data: fileData, error: storageError } = await supabase.storage
+          .from("resumes")
+          .download(resumeRow.file_path);
+
+        if (storageError) {
+          setLastScannedResume({
+            title: `Resume ${resumeId}`,
+            updatedAt,
+          });
+          return;
+        }
+
+        const text = await fileData.text();
+        const json = JSON.parse(text);
+        const title =
+          json?.personal_info?.full_name || json?.title || "Untitled Resume";
+
+        setLastScannedResume({
+          title,
+          updatedAt,
+        });
+      } catch (err) {
+        console.error("Last scanned title load failed:", err);
+        setLastScannedResume({
+          title: `Resume ${resumeId}`,
+          updatedAt,
+        });
+      }
+    };
+
+    loadLastScannedTitle();
+  }, [atsScans]);
+
+  const averageATSScore = atsScans.length
+    ? Math.round(
+        atsScans.reduce((sum, s) => sum + (Number(s.ats_score) || 0), 0) /
+          atsScans.length,
+      )
+    : 0;
+  const totalResumes = resumesCount;
+  const lastScan = atsScans && atsScans.length > 0 ? atsScans[0] : null;
+  const matchedCount = lastScan?.matched_skills?.length || 0;
+  const missingCount = lastScan?.missing_skills?.length || 0;
+  const totalSkillCount = matchedCount + missingCount;
+
   const scoreBreakdown = {
-    keywords: 85,
-    formatting: 72,
-    experience: 80,
-    skills: 75,
+    matchedSkills:
+      totalSkillCount > 0
+        ? Math.round((matchedCount / totalSkillCount) * 100)
+        : 0,
+    missingSkills:
+      totalSkillCount > 0
+        ? Math.round((missingCount / totalSkillCount) * 100)
+        : 0,
   };
 
   return (
@@ -162,7 +311,7 @@ function Dashboard() {
         </button>
 
         {/* Upload Existing */}
-        <button
+        {/* <button
           onClick={() => setShowUploadResume(true)}
           className="w-full sm:max-w-36 h-48 flex flex-col items-center justify-center
           rounded-lg gap-2 bg-gray-900 text-gray-300
@@ -174,7 +323,7 @@ function Dashboard() {
           <p className="text-sm group-hover:text-purple-400 transition-all duration-300">
             Upload Existing
           </p>
-        </button>
+        </button> */}
 
         {/* View Arsenal */}
         <button

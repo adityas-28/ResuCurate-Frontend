@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { dummyResumeData } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
 function AtsScan() {
   const [allResumes, setAllResumes] = useState([]);
@@ -43,20 +44,110 @@ function AtsScan() {
   };
 
   const scanResume = async (resumeId = null, isUploaded = false) => {
-    // For existing resumes, you can implement API call here if needed
-    // For now, keeping the navigation behavior for existing resumes
-    if (resumeId && !isUploaded) {
-      setScanningResumeId(resumeId);
-      setShowResults(false);
-      setScanResults(null);
+    if (!resumeId || isUploaded) return;
 
-      // Simulate ATS scanning process for existing resumes
-      setTimeout(() => {
-        const reviewResumeId = resumeId;
-        navigate(`/review/${reviewResumeId}`);
-      }, 2000);
+    setScanningResumeId(resumeId);
+    setShowResults(false);
+    setScanResults(null);
+
+    try {
+      // Load file_path from your `resumes` table, then download the PDF from Storage
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+
+      const userId = authData?.user?.id;
+
+      const { data: resumeRow, error: dbError } = await supabase
+        .from("resumes")
+        .select("file_path")
+        .eq("id", resumeId)
+        .single();
+
+      if (dbError) throw dbError;
+      if (!resumeRow?.file_path) throw new Error("Resume file_path not found");
+
+      const { data: fileData, error: storageError } = await supabase.storage
+        .from("resumes")
+        .download(resumeRow.file_path);
+
+      if (storageError) throw storageError;
+
+      const apiFormData = new FormData();
+      // fileData should be a Blob in the browser
+      const pdfBlob = fileData instanceof Blob ? fileData : new Blob([fileData]);
+      apiFormData.append("file", pdfBlob, "resume.pdf");
+
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const apiEndpoint = `${API_URL}/api/ats-score`;
+
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        body: apiFormData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to scan resume";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      // Map API response to your expected UI structure
+      setScanResults({
+        resumeName: data.resumeName || "",
+        overallScore: data.overallScore || 0,
+        breakdown: data.breakdown || {},
+        strengths: Array.isArray(data.strengths) ? data.strengths : [],
+        improvements: Array.isArray(data.improvements) ? data.improvements : [],
+        links: data.links || {},
+        field: data.field || "Unknown",
+      });
+      setShowResults(true);
+      setScanningResumeId(null);
+
+      // Persist result to Supabase
+      const ats_score =
+        typeof data.overallScore === "number"
+          ? data.overallScore
+          : Number(data.overallScore) || 0;
+
+      const missing_skills = Array.isArray(data.improvements)
+        ? data.improvements
+        : [];
+      const matched_skills = Array.isArray(data.strengths) ? data.strengths : [];
+      const feedback = Array.isArray(data.feedback) ? data.feedback : [];
+
+      const { error: insertError } = await supabase.from("ats_scans").insert({
+        user_id: userId ?? null,
+        resume_id: resumeId ?? null,
+        ats_score: Number.isFinite(ats_score) ? Math.round(ats_score) : 0,
+        missing_skills,
+        matched_skills,
+        feedback: feedback.length > 0 ? feedback : null,
+      });
+
+      if (insertError) {
+        console.error("ATS scan insert error:", insertError);
+        alert(insertError.message);
+      }
+    } catch (error) {
+      console.error("Error scanning resume:", error);
+
+      let errorMessage = error?.message || "Error scanning resume";
+      if (errorMessage === "Failed to fetch") {
+        errorMessage =
+          "Unable to connect to the server. Please make sure the backend server is running on port 8000.";
+      }
+
+      alert(`Error scanning resume: ${errorMessage}`);
+      setScanningResumeId(null);
     }
-    // For uploaded files, the scanUploadedResume function handles it
   };
 
   const scanUploadedResume = async () => {
@@ -107,14 +198,50 @@ function AtsScan() {
         resumeName: data.resumeName || uploadedFile.name,
         overallScore: data.overallScore || 0,
         breakdown: data.breakdown || {},
-        strengths: data.strengths || [],
-        improvements: data.improvements || [],
+        strengths: Array.isArray(data.strengths) ? data.strengths : [],
+        improvements: Array.isArray(data.improvements) ? data.improvements : [],
         links: data.links || {},
         field: data.field || "Unknown",
       });
 
       setShowResults(true);
       setScanningResumeId(null);
+
+      // Persist result to Supabase (resume_id is null for uploaded-only scans)
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+
+        const userId = authData?.user?.id ?? null;
+
+        const ats_score =
+          typeof data.overallScore === "number"
+            ? data.overallScore
+            : Number(data.overallScore) || 0;
+
+        const missing_skills = Array.isArray(data.improvements)
+          ? data.improvements
+          : [];
+        const matched_skills = Array.isArray(data.strengths) ? data.strengths : [];
+        const feedback = Array.isArray(data.feedback) ? data.feedback : [];
+
+        const { error: insertError } = await supabase.from("ats_scans").insert({
+          user_id: userId,
+          resume_id: null,
+          ats_score: Number.isFinite(ats_score) ? Math.round(ats_score) : 0,
+          missing_skills,
+          matched_skills,
+          feedback: feedback.length > 0 ? feedback : null,
+        });
+
+        if (insertError) {
+          console.error("ATS scan insert error:", insertError);
+          alert(insertError.message);
+        }
+      } catch (insertErr) {
+        console.error("ATS scan insert failed:", insertErr);
+        alert(insertErr?.message || "Failed to save ATS scan result");
+      }
     } catch (error) {
       console.error("Error scanning resume:", error);
 
