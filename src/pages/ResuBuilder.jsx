@@ -331,7 +331,9 @@ function ResuBuilder() {
                 project_description: proj.description || null,
                 tech_stack: parseTechStack(proj.technologies),
                 start_date: monthToDateString(proj.start_date),
-                end_date: proj.current ? null : monthToDateString(proj.end_date),
+                end_date: proj.current
+                  ? null
+                  : monthToDateString(proj.end_date),
                 github_url: proj.github || null,
                 project_url: proj.url || null,
               }));
@@ -404,6 +406,7 @@ function ResuBuilder() {
   };
 
   const loadExistingResume = async () => {
+    console.log("Loading existing resume", resumeId);
     if (resumeId === "arsenal") {
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
@@ -423,14 +426,21 @@ function ResuBuilder() {
         skills,
         publications,
       ] = await Promise.all([
-        supabase.from("personal_details").select("*").eq("user_id", userId).single(),
+        supabase
+          .from("personal_details")
+          .select("*")
+          .eq("user_id", userId)
+          .single(),
         supabase
           .from("professional_summary")
           .select("*")
           .eq("user_id", userId)
           .single(),
         supabase.from("career_objectives").select("*").eq("user_id", userId),
-        supabase.from("professional_experience").select("*").eq("user_id", userId),
+        supabase
+          .from("professional_experience")
+          .select("*")
+          .eq("user_id", userId),
         supabase.from("education").select("*").eq("user_id", userId),
         supabase.from("leadership").select("*").eq("user_id", userId),
         supabase.from("projects").select("*").eq("user_id", userId),
@@ -449,7 +459,9 @@ function ResuBuilder() {
       };
 
       const objectiveText =
-        objective.data && Array.isArray(objective.data) && objective.data.length > 0
+        objective.data &&
+        Array.isArray(objective.data) &&
+        objective.data.length > 0
           ? objective.data[0]?.career_objective || ""
           : "";
 
@@ -471,8 +483,7 @@ function ResuBuilder() {
         start_date: dateToMonthString(edu.start_date),
         end_date: dateToMonthString(edu.end_date),
         current: !edu.end_date,
-        gpa:
-          edu.gpa === null || edu.gpa === undefined ? "" : String(edu.gpa),
+        gpa: edu.gpa === null || edu.gpa === undefined ? "" : String(edu.gpa),
         description: edu.description || "",
       }));
 
@@ -489,7 +500,9 @@ function ResuBuilder() {
         github: proj.github_url || "",
       }));
 
-      const mappedSkills = (skills.data || []).map((s) => s.skill).filter(Boolean);
+      const mappedSkills = (skills.data || [])
+        .map((s) => s.skill)
+        .filter(Boolean);
 
       setResumeData((prev) => ({
         ...prev,
@@ -524,6 +537,101 @@ function ResuBuilder() {
         personal_info: dummyResumeData[0].personal_info,
       });
       document.title = "Generated Resume - ResuCurate";
+      return;
+    }
+
+    console.log("mein generated mein nhi gaya", resumeId);
+
+    if (resumeId) {
+      try {
+        console.log("mein resumeId mein gaya", resumeId);
+        // 1. Get file path from DB
+        const { data: resumeRow, error: dbError } = await supabase
+          .from("resumes")
+          .select("file_path")
+          .eq("id", resumeId)
+          .single();
+
+        if (dbError) {
+          console.error("DB error:", dbError);
+          return;
+        }
+
+        const filePath = resumeRow.file_path;
+
+        // 2. Download JSON from storage
+        const { data: fileData, error: storageError } = await supabase.storage
+          .from("resumes") // your bucket name
+          .download(filePath);
+
+        console.log("mein fileData mein gaya", fileData);
+        console.log("mein storageError mein gaya", storageError);
+
+        if (storageError) {
+          console.error("Storage error:", storageError);
+          return;
+        }
+
+        // 3. Convert blob → JSON
+        const text = await fileData.text();
+        const json = JSON.parse(text);
+
+        console.log("mein json mein gaya", json);
+
+        // 4. Set state
+        const mappedProjects = (json.projects || []).map((proj) => ({
+          name: proj.project_name || "",
+          description: proj.project_description || "",
+          technologies: Array.isArray(proj.tech_stack)
+            ? proj.tech_stack.join(", ")
+            : "",
+          start_date: dateToMonthString(proj.start_date),
+          end_date: dateToMonthString(proj.end_date),
+          current: !proj.end_date,
+          url: proj.project_url || "",
+          github: proj.github_url || "",
+        }));
+
+        const mappedSkills = (json.skills || [])
+          .map((s) => s.skill)
+          .filter(Boolean);
+
+        const mappedEducation = (json.education || []).map((edu) => ({
+          degree: edu.degree || "",
+          field: edu.field_of_study || "",
+          institution: edu.institution || "",
+          location: edu.location || "",
+          start_date: dateToMonthString(edu.start_date),
+          end_date: dateToMonthString(edu.end_date),
+          current: !edu.end_date,
+          gpa: edu.gpa ?? "",
+          description: edu.description || "",
+        }));
+
+        setResumeData((prev) => ({
+          ...prev,
+          _id: resumeId,
+
+          personal_info: json.personal_info || {},
+          professional_summary: json.professional_summary || "",
+          career_objective: json.personal_info?.career_objective || "",
+
+          experience: json.experience || [],
+          education: mappedEducation,
+          project: mappedProjects, // 🔥 IMPORTANT FIX
+          skills: mappedSkills, // 🔥 IMPORTANT FIX
+
+          research: json.research || [],
+          certifications: json.certifications || [],
+          awards_and_honors: json.awards_and_honors || [],
+          publications: json.publications || [],
+        }));
+
+        document.title = json.title || "Resume";
+      } catch (err) {
+        console.error("Error loading resume:", err);
+      }
+
       return;
     }
 
