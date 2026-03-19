@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import ClassicTemplate from "../assets/templates/ClassicTemplate";
@@ -84,9 +85,7 @@ export default function Preview() {
           personal_info: json.personal_info || {},
           professional_summary: json.professional_summary || "",
           career_objective:
-            json.career_objective ||
-            json.personal_info?.career_objective ||
-            "",
+            json.career_objective || json.personal_info?.career_objective || "",
           experience: json.experience || [],
           education: mappedEducation,
           project: mappedProjects,
@@ -118,12 +117,25 @@ export default function Preview() {
   return (
     <div className="bg-gray-950 min-h-screen">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <Link
-          to="/app/my-resumes"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
-        >
-          Back to My Resumes
-        </Link>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <Link
+            to="/app/my-resumes"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="size-4" /> Back to My Resumes
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors border border-gray-700"
+            disabled={loading || !!error}
+            aria-label="Print resume"
+          >
+            <Printer className="size-4" />
+            <span>Print</span>
+          </button>
+        </div>
 
         {loading && <div className="text-gray-300">Loading preview...</div>}
         {error && (
