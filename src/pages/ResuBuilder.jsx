@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { dummyResumeData } from "../assets/assets";
 import {
   ArrowLeftIcon,
@@ -35,9 +35,14 @@ import PublicationsForm from "../components/Arsenal/PublicationsForm";
 import TemplateSelector from "../components/Arsenal/TemplateSelector";
 import ColorPicker from "../components/ColorPicker";
 import { supabase } from "../lib/supabase";
+import ClassicTemplate from "../assets/templates/ClassicTemplate";
+import ModernTemplate from "../assets/templates/ModernTemplate";
+import MinimalImageTemplate from "../assets/templates/MinimalImageTemplate";
+import MinimalTemplate from "../assets/templates/MinimalTemplate";
 
 function ResuBuilder() {
   const { resumeId } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const [resumeData, setResumeData] = useState({
@@ -55,8 +60,8 @@ function ResuBuilder() {
     awards_and_honors: [],
     skills: [],
     publications: [],
-    template: "classic",
-    accent_color: "#3B82F6",
+    // template: "classic",
+    // accent_color: "#3B82F6",
     public: false,
   });
 
@@ -382,6 +387,9 @@ function ResuBuilder() {
       }
 
       alert(`${currentSection} saved ✅`);
+      if (resumeId === "arsenal") {
+        navigate("/app/view-arsenal");
+      }
     } catch (err) {
       console.error(err);
       alert("Error saving section");
@@ -528,6 +536,111 @@ function ResuBuilder() {
 
     // Check if it's a generated ID (from our Dashboard mock)
     if (resumeId && resumeId.startsWith("generated-")) {
+      const apiResponse = location?.state?.apiResponse;
+      if (apiResponse) {
+        const json = apiResponse;
+
+        const personalInfo =
+          json.personal_info || json.personalInfo || json.personal || {};
+        const mappedPersonal = {
+          ...personalInfo,
+          // template expects these exact keys
+          full_name:
+            personalInfo.full_name ||
+            personalInfo.fullName ||
+            personalInfo.name ||
+            personalInfo.full_name ||
+            "",
+          website: personalInfo.website || personalInfo.personal_website || "",
+          linkedin: personalInfo.linkedin || "",
+        };
+
+        const rawExperience =
+          json.experience || json.professional_experience || [];
+        const mappedExperience = (rawExperience || []).map((exp) => ({
+          company: exp.company || "",
+          position: exp.position || exp.title || exp.role || "",
+          location: exp.location || "",
+          start_date: dateToMonthString(exp.start_date || exp.startDate || ""),
+          end_date: dateToMonthString(exp.end_date || exp.endDate || ""),
+          current:
+            exp.current !== undefined
+              ? Boolean(exp.current)
+              : !(exp.end_date || exp.endDate),
+          description: exp.description || exp.details || "",
+        }));
+
+        const rawEducation = json.education || [];
+        const mappedEducation = (rawEducation || []).map((edu) => ({
+          degree: edu.degree || edu.title || "",
+          field: edu.field || edu.field_of_study || "",
+          institution: edu.institution || edu.school || "",
+          location: edu.location || "",
+          start_date: dateToMonthString(edu.start_date || edu.startDate || ""),
+          end_date: dateToMonthString(edu.end_date || edu.endDate || ""),
+          current:
+            edu.current !== undefined
+              ? Boolean(edu.current)
+              : !(edu.end_date || edu.endDate),
+          gpa: edu.gpa === null || edu.gpa === undefined ? "" : String(edu.gpa),
+          description: edu.description || "",
+        }));
+
+        const rawProjects = json.project || json.projects || [];
+        const mappedProjects = (rawProjects || []).map((proj) => ({
+          name: proj.name || proj.project_name || proj.title || "",
+          description:
+            proj.description || proj.project_description || proj.summary || "",
+          technologies: Array.isArray(proj.tech_stack)
+            ? proj.tech_stack.join(", ")
+            : typeof proj.technologies === "string"
+              ? proj.technologies
+              : Array.isArray(proj.technologies)
+                ? proj.technologies.join(", ")
+                : "",
+          start_date: dateToMonthString(
+            proj.start_date || proj.startDate || "",
+          ),
+          end_date: dateToMonthString(proj.end_date || proj.endDate || ""),
+          current:
+            proj.current !== undefined
+              ? Boolean(proj.current)
+              : !(proj.end_date || proj.endDate),
+          url: proj.url || proj.project_url || "",
+          github: proj.github || proj.github_url || "",
+        }));
+
+        const mappedSkills = (json.skills || [])
+          .map((s) => (typeof s === "string" ? s : s.skill))
+          .filter(Boolean);
+
+        setResumeData({
+          ...resumeData,
+          _id: resumeId,
+          title: json.title || "Generated Resume",
+          template: json.template || "classic",
+          accent_color: json.accent_color || resumeData.accent_color,
+
+          personal_info: mappedPersonal,
+          professional_summary:
+            json.professional_summary || json.professionalSummary || "",
+          career_objective: json.career_objective || json.careerObjective || "",
+          experience: mappedExperience,
+          education: mappedEducation,
+          project: mappedProjects,
+          skills: mappedSkills,
+
+          leadership: json.leadership || [],
+          research: json.research || [],
+          certifications: json.certifications || [],
+          awards_and_honors: json.awards_and_honors || json.awards || [],
+          publications: json.publications || [],
+        });
+
+        document.title = json.title || "Generated Resume - ResuCurate";
+        return;
+      }
+
       setResumeData({
         ...resumeData,
         _id: resumeId,
@@ -540,7 +653,7 @@ function ResuBuilder() {
       return;
     }
 
-    console.log("mein generated mein nhi gaya", resumeId);
+    // console.log("mein generated mein nhi gaya", resumeId);
 
     if (resumeId) {
       try {
@@ -666,23 +779,7 @@ function ResuBuilder() {
         <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-700 p-6 md:p-8">
           {/* Template and Color Picker */}
           {!isArsenal && (
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-700 pb-4">
-              <TemplateSelector
-                selectedTemplate={resumeData.template}
-                onChange={(template) =>
-                  setResumeData((prev) => ({ ...prev, template }))
-                }
-              />
-              <ColorPicker
-                selectedColor={resumeData.accent_color}
-                onChange={(color) =>
-                  setResumeData((prev) => ({
-                    ...prev,
-                    accent_color: color,
-                  }))
-                }
-              />
-            </div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-700 pb-4"></div>
           )}
 
           {/* Add Section Button */}

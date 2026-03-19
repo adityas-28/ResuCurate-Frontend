@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import { dummyResumeData } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
 export default function MyResumes() {
   const [allResumes, setAllResumes] = useState([]);
   const [filteredResumes, setFilteredResumes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const navigate = useNavigate();
   const colors = ["#9333ea", "#d97706", "#dc2626", "#0284c7", "#16a34a"];
@@ -29,25 +31,118 @@ export default function MyResumes() {
       setFilteredResumes(allResumes);
     } else {
       const filtered = allResumes.filter((resume) =>
-        resume.title.toLowerCase().includes(searchQuery.toLowerCase())
+        resume.title.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       setFilteredResumes(filtered);
     }
   }, [searchQuery, allResumes]);
 
   const loadAllResumes = async () => {
-    setAllResumes(dummyResumeData);
-    setFilteredResumes(dummyResumeData);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      if (!userId) return;
+
+      // 1. Get all resumes for user
+      const { data: resumes, error } = await supabase
+        .from("resumes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("DB error:", error);
+        return;
+      }
+
+      // 2. Fetch JSON for each resume
+      const enrichedResumes = await Promise.all(
+        resumes.map(async (res) => {
+          try {
+            const { data: fileData } = await supabase.storage
+              .from("resumes")
+              .download(res.file_path);
+
+            const text = await fileData.text();
+            const json = JSON.parse(text);
+
+            return {
+              _id: res.id,
+              title: json.personal_info?.full_name || "Untitled Resume",
+              personal_info: json.personal_info || {},
+              updatedAt: res.created_at,
+            };
+          } catch (err) {
+            console.error("Error loading resume file:", err);
+            return {
+              _id: res.id,
+              title: "Error loading",
+              personal_info: {},
+              updatedAt: res.created_at,
+            };
+          }
+        }),
+      );
+
+      setAllResumes(enrichedResumes);
+      setFilteredResumes(enrichedResumes);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   const deleteResume = async (resumeId) => {
-    const confirm = window.confirm(
-      "Are you sure you want to delete this resume? This action cannot be undone."
-    );
-    if (confirm) {
+    try {
+      // Optional: show loading state
+      setDeletingId(resumeId);
+
+      // 1. Get file_path
+      const { data: resumeRow, error: fetchError } = await supabase
+        .from("resumes")
+        .select("file_path")
+        .eq("id", resumeId)
+        .single();
+
+      if (fetchError) {
+        console.error("Fetch error:", fetchError);
+        return;
+      }
+
+      const filePath = resumeRow.file_path;
+
+      // 2. Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("resumes")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+        return;
+      }
+
+      // 3. Delete from DB
+      const { error: dbError } = await supabase
+        .from("resumes")
+        .delete()
+        .eq("id", resumeId);
+
+      if (dbError) {
+        console.error("DB delete error:", dbError);
+        return;
+      }
+
+      // 4. Update UI instantly
       setAllResumes((prev) => prev.filter((resume) => resume._id !== resumeId));
-      setFilteredResumes((prev) => prev.filter((resume) => resume._id !== resumeId));
+      setFilteredResumes((prev) =>
+        prev.filter((resume) => resume._id !== resumeId),
+      );
+
       setDeleteConfirmId(null);
+    } catch (err) {
+      console.error("Delete error:", err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -101,7 +196,8 @@ export default function MyResumes() {
           </div>
           {searchQuery && (
             <p className="mt-2 text-sm text-gray-400">
-              Found {filteredResumes.length} resume{filteredResumes.length !== 1 ? "s" : ""}
+              Found {filteredResumes.length} resume
+              {filteredResumes.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -152,7 +248,8 @@ export default function MyResumes() {
                           {resume.title}
                         </h3>
                         <p className="text-xs text-gray-400 mt-1">
-                          Updated {new Date(resume.updatedAt).toLocaleDateString()}
+                          Updated{" "}
+                          {new Date(resume.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -168,29 +265,21 @@ export default function MyResumes() {
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => handlePreview(resume._id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors text-sm group/btn"
-                    >
-                      <Eye className="size-4 group-hover/btn:text-indigo-400 transition-colors" />
-                      <span>Preview</span>
-                    </button>
-
-                    <button
                       onClick={() => handleOpen(resume._id)}
                       className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors text-sm group/btn"
                     >
                       <Edit className="size-4 group-hover/btn:text-green-400 transition-colors" />
                       <span>Open</span>
                     </button>
-
                     <button
-                      onClick={() => handleAtsScan(resume._id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors text-sm group/btn"
+                      onClick={() => handlePreview(resume._id)}
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 
+                      hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg 
+                      transition-colors text-sm group/btn"
                     >
-                      <Sparkles className="size-4 group-hover/btn:text-purple-400 transition-colors" />
-                      <span>ATS Scan</span>
+                      <Eye className="size-4 group-hover/btn:text-indigo-400 transition-colors" />
+                      <span>Preview</span>
                     </button>
-
                     <button
                       onClick={() => setDeleteConfirmId(resume._id)}
                       className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-red-600/20 text-gray-300 hover:text-red-400 rounded-lg transition-colors text-sm group/btn border border-transparent hover:border-red-500/30"
