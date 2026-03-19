@@ -264,11 +264,8 @@ function Dashboard() {
     loadLastScannedTitle();
   }, [atsScans]);
 
-  const averageATSScore = atsScans.length
-    ? Math.round(
-        atsScans.reduce((sum, s) => sum + (Number(s.ats_score) || 0), 0) /
-          atsScans.length,
-      )
+  const bestATSScore = atsScans.length
+    ? Math.max(...atsScans.map((s) => Number(s.ats_score) || 0))
     : 0;
   const totalResumes = resumesCount;
   const lastScan = atsScans && atsScans.length > 0 ? atsScans[0] : null;
@@ -586,26 +583,26 @@ function Dashboard() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* ATS Overview Card */}
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Average ATS Score */}
+              {/* Best ATS Score */}
               <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-indigo-500/50 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="size-5 text-indigo-400" />
                     <span className="text-sm text-gray-400">
-                      Average ATS Score
+                      Best ATS Score
                     </span>
                   </div>
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-white">
-                    {averageATSScore}
+                    {bestATSScore}
                   </span>
                   <span className="text-sm text-gray-400">/100</span>
                 </div>
                 <div className="mt-2 w-full bg-gray-700 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${averageATSScore}%` }}
+                    style={{ width: `${bestATSScore}%` }}
                   />
                 </div>
               </div>

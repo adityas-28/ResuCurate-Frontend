@@ -15,7 +15,10 @@ export default function Hero({ border = "none", boxShadow = "none" }) {
     `<svg class="mx-14" width="103" height="25" viewBox="0 0 103 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M91.39 8.325c.58 0 1.056-.301 1.12-.69l.573-6.47c0-.64-.75-1.165-1.692-1.165-.94 0-1.689.525-1.689 1.165l.572 6.47c.063.389.54.69 1.118.69zm-3.497 2.02c.29-.5.269-1.064-.038-1.314l-5.318-3.73c-.553-.32-1.382.065-1.852.88-.472.816-.389 1.726.163 2.046l5.888 2.742c.368.136.87-.126 1.159-.627zm6.997-.003c.29.501.79.764 1.158.627l5.888-2.741c.555-.32.634-1.23.166-2.046-.473-.815-1.303-1.201-1.855-.881l-5.318 3.73c-.304.25-.327.814-.038 1.315zm-3.5 6.065c.58 0 1.056.299 1.12.688l.573 6.47c0 .64-.75 1.165-1.692 1.165-.94 0-1.689-.524-1.689-1.166l.572-6.469c.063-.39.54-.688 1.118-.688zm3.5-2.021c.29-.503.79-.763 1.158-.625l5.888 2.74c.555.32.634 1.232.166 2.047-.473.813-1.303 1.2-1.855.88l-5.318-3.727c-.304-.252-.327-.816-.038-1.316h-.002m-6.996 0c.29.5.269 1.065-.038 1.317l-5.318 3.727c-.553.32-1.382-.068-1.852-.88-.472-.816-.389-1.727.163-2.048l5.888-2.74c.368-.138.87.123 1.159.625zm-30.047 1.303c0 .199-.018.403-.072.583-.226.747-1 1.379-1.967 1.379-.806 0-1.447-.459-1.447-1.426 0-1.482 1.63-1.89 3.486-1.88zm2.911-2.581c0-2.443-1.044-4.593-4.57-4.593-1.81 0-3.248.509-4.032.962l.575 1.964c.716-.453 1.859-.827 2.94-.827 1.788-.005 2.081 1.013 2.081 1.664v.155c-3.899-.006-6.364 1.344-6.364 4.095 0 1.68 1.255 3.254 3.438 3.254 1.34 0 2.464-.535 3.136-1.393h.067s.444 1.863 2.9 1.15c-.128-.775-.17-1.602-.17-2.597zM0 5.19s2.548 10.44 2.955 12.135c.475 1.978 1.33 2.706 3.795 2.214l1.592-6.473c.403-1.609.673-2.756.933-4.39h.045c.183 1.652.442 2.786.774 4.395 0 0 .647 2.94.979 4.482s1.258 2.516 3.673 1.986l3.791-14.35h-3.06l-1.295 6.204c-.348 1.806-.664 3.218-.907 4.87h-.044c-.22-1.638-.503-2.992-.856-4.752l-1.347-6.323h-3.19l-1.441 6.164c-.408 1.874-.79 3.386-1.033 4.982H5.32c-.25-1.503-.58-3.404-.939-5.217 0 0-.856-4.409-1.157-5.929zm24.326 10.5c0 .199-.018.403-.073.583-.225.747-1 1.379-1.967 1.379-.807 0-1.447-.459-1.447-1.426 0-1.482 1.63-1.89 3.487-1.88zm2.91-2.581c0-2.443-1.043-4.593-4.57-4.593-1.81 0-3.248.509-4.032.962l.574 1.964c.716-.453 1.859-.827 2.94-.827 1.79-.005 2.083 1.013 2.083 1.664v.155c-3.9-.006-6.365 1.344-6.365 4.095 0 1.68 1.255 3.254 3.436 3.254 1.343 0 2.465-.535 3.138-1.393h.066s.446 1.863 2.9 1.15c-.128-.775-.17-1.602-.17-2.597zm4.858 3.385V5.189H29.18v14.35h2.914zM70.224 5.19v10.586c0 1.46.275 2.482.862 3.108.514.547 1.36.9 2.373.9.862 0 1.71-.164 2.11-.312l-.038-2.277a4.5 4.5 0 0 1-1.107.131c-.993 0-1.326-.636-1.326-1.946v-4.05h2.539V8.581h-2.538V5.19zM62.7 8.759v10.78h3.007v-5.52c0-.298.018-.558.065-.795.223-1.157 1.107-1.896 2.377-1.896.348 0 .597.038.867.076V8.582a3 3 0 0 0-.662-.066c-1.122 0-2.398.724-2.934 2.277h-.081V8.759zm-28.565 0v10.78h2.93v-6.321c0-.297.035-.61.137-.883.243-.636.835-1.382 1.78-1.382 1.183 0 1.736 1 1.736 2.442v6.144h2.927V13.14c0-.283.038-.624.122-.874.24-.724.878-1.313 1.757-1.313 1.199 0 1.774.982 1.774 2.679v5.907h2.929v-6.35c0-3.349-1.7-4.674-3.62-4.674-.85 0-1.52.213-2.128.584q-.766.47-1.365 1.344h-.043c-.463-1.162-1.552-1.928-2.972-1.928-1.823 0-2.642.925-3.14 1.708h-.043V8.76z" fill="#E2E8F0"/></svg>`,
   ];
   return (
-    <div className="relative z-10 flex flex-col items-center" style={{ border, boxShadow }}>
+    <div
+      className="relative z-10 flex flex-col items-center"
+      style={{ border, boxShadow }}
+    >
       {/* <span className="mb-1.5 inline-block rounded-full bg-gray-600/50 px-3 py-1.5 text-sm mb-10 mt-1">
         App Live Now !
       </span> */}
@@ -23,7 +26,7 @@ export default function Hero({ border = "none", boxShadow = "none" }) {
       <h1 className="max-w-3xl text-center text-3xl font-medium leading-tight sm:text-5xl md:text-7xl mt-20">
         The Only{" "}
         <span className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent font-bold tracking-tight ">
-          Free AI Resume Builder
+          Free AI Resume Builder&nbsp;
         </span>
         You'll Ever Need
       </h1>
@@ -82,47 +85,6 @@ export default function Hero({ border = "none", boxShadow = "none" }) {
           <p>Star React Bits on GitHub!</p>
         </MagnetButton> */}
       </>
-
-      {/* Coming Soon Section */}
-      <div className="fixed top-21 text-sm left-1/2 z-50 w-[95%] max-w-3xl -translate-x-1/2 bg-sky-700 rounded-4xl ">
-        <div className="flex items-center justify-between gap-4 rounded-2xl  px-3 py-2 backdrop-blur-xl border border-white/10 shadow-lg ">
-          {/* Left content */}
-          <div className="flex items-center gap-3 text-sm">
-            <div className="flex h-9 w-9 items-center justify-center rounded-4xl bg-blue-950/100 text-blue-900">
-              🚀
-            </div>
-
-            <div className="leading-tight">
-              <p className="text-sm font-semibold text-white">
-                ResuCurate is almost ready!
-              </p>
-              <p className="text-xs text-gray-300">
-                We’re polishing the final details. Get notified when ResuCurate
-                is ready.
-              </p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 bg">
-            <Link
-              to="/notify"
-              className="rounded-3xl border-2 border-dashed border-black bg-blue-950 text-white px-4 py-2 text-xs font-semibold uppercase text-black transition-all duration-300 
-hover:translate-x-[-3px] hover:translate-y-[-3px] hover:rounded-2xl hover:shadow-[3px_3px_0px_black] 
-active:translate-x-0 active:translate-y-0 active:rounded-3xl active:shadow-none"
-            >
-              Notify me →
-            </Link>
-
-            <button
-              onClick={(e) => e.currentTarget.closest("div.fixed")?.remove()}
-              className="text-white hover:text-white transition"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
 
       <h6
         className="max-w-3xl text-center text-3xl sm:text-4xl md:text-4xl mt-30 font-medium leading-tight

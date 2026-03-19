@@ -69,7 +69,7 @@ export default function ViewArsenal() {
   const loadArsenalData = async () => {
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData.user.id;
-  
+
     const [
       personal,
       summary,
@@ -82,12 +82,27 @@ export default function ViewArsenal() {
       certifications,
       achievements,
       skills,
-      publications
+      publications,
     ] = await Promise.all([
-      supabase.from("personal_details").select("*").eq("user_id", userId).single(),
-      supabase.from("professional_summary").select("*").eq("user_id", userId).single(),
-      supabase.from("career_objectives").select("*").eq("user_id", userId).single(),
-      supabase.from("professional_experience").select("*").eq("user_id", userId),
+      supabase
+        .from("personal_details")
+        .select("*")
+        .eq("user_id", userId)
+        .single(),
+      supabase
+        .from("professional_summary")
+        .select("*")
+        .eq("user_id", userId)
+        .single(),
+      supabase
+        .from("career_objectives")
+        .select("*")
+        .eq("user_id", userId)
+        .single(),
+      supabase
+        .from("professional_experience")
+        .select("*")
+        .eq("user_id", userId),
       supabase.from("education").select("*").eq("user_id", userId),
       supabase.from("leadership").select("*").eq("user_id", userId),
       supabase.from("projects").select("*").eq("user_id", userId),
@@ -95,9 +110,9 @@ export default function ViewArsenal() {
       supabase.from("certifications").select("*").eq("user_id", userId),
       supabase.from("achievements").select("*").eq("user_id", userId),
       supabase.from("skills").select("*").eq("user_id", userId),
-      supabase.from("publications").select("*").eq("user_id", userId)
+      supabase.from("publications").select("*").eq("user_id", userId),
     ]);
-  
+
     const arsenal = {
       personal_info: personal.data,
       professional_summary: summary.data?.professional_summary || "",
@@ -110,9 +125,9 @@ export default function ViewArsenal() {
       certifications: certifications.data || [],
       awards_and_honors: achievements.data || [],
       skills: skills.data ? skills.data.map((s) => s.skill) : [],
-      publications: publications.data || []
+      publications: publications.data || [],
     };
-  
+
     setArsenalData(arsenal);
   };
 
@@ -188,7 +203,7 @@ export default function ViewArsenal() {
 
   const handleDelete = async (section, itemId) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
-  
+
     const tableMap = {
       experience: "professional_experience",
       education: "education",
@@ -199,15 +214,15 @@ export default function ViewArsenal() {
       awards_and_honors: "achievements",
       publications: "publications",
     };
-  
+
     try {
       if (section === "skills") {
         // Special case: skills table
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData.user.id;
-  
+
         const skillToDelete = arsenalData.skills[itemId];
-  
+
         await supabase
           .from("skills")
           .delete()
@@ -215,13 +230,10 @@ export default function ViewArsenal() {
           .eq("skill", skillToDelete);
       } else {
         const table = tableMap[section];
-  
-        await supabase
-          .from(table)
-          .delete()
-          .eq("id", itemId);
+
+        await supabase.from(table).delete().eq("id", itemId);
       }
-  
+
       // Reload data after delete
       loadArsenalData();
     } catch (err) {
@@ -319,11 +331,12 @@ export default function ViewArsenal() {
                     {item.project_description}
                   </p>
                 )}
-                {Array.isArray(item.tech_stack) && item.tech_stack.length > 0 && (
-                  <p className="text-gray-400 text-xs mt-2">
-                    Tech: {item.tech_stack.join(", ")}
-                  </p>
-                )}
+                {Array.isArray(item.tech_stack) &&
+                  item.tech_stack.length > 0 && (
+                    <p className="text-gray-400 text-xs mt-2">
+                      Tech: {item.tech_stack.join(", ")}
+                    </p>
+                  )}
                 {(item.project_url || item.github_url) && (
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
                     {item.project_url && (

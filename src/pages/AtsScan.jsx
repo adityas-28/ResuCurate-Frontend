@@ -52,7 +52,8 @@ function AtsScan() {
 
     try {
       // Load file_path from your `resumes` table, then download the PDF from Storage
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
       if (authError) throw authError;
 
       const userId = authData?.user?.id;
@@ -74,7 +75,8 @@ function AtsScan() {
 
       const apiFormData = new FormData();
       // fileData should be a Blob in the browser
-      const pdfBlob = fileData instanceof Blob ? fileData : new Blob([fileData]);
+      const pdfBlob =
+        fileData instanceof Blob ? fileData : new Blob([fileData]);
       apiFormData.append("file", pdfBlob, "resume.pdf");
 
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -120,7 +122,9 @@ function AtsScan() {
       const missing_skills = Array.isArray(data.improvements)
         ? data.improvements
         : [];
-      const matched_skills = Array.isArray(data.strengths) ? data.strengths : [];
+      const matched_skills = Array.isArray(data.strengths)
+        ? data.strengths
+        : [];
       const feedback = Array.isArray(data.feedback) ? data.feedback : [];
 
       const { error: insertError } = await supabase.from("ats_scans").insert({
@@ -209,7 +213,8 @@ function AtsScan() {
 
       // Persist result to Supabase (resume_id is null for uploaded-only scans)
       try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
         if (authError) throw authError;
 
         const userId = authData?.user?.id ?? null;
@@ -222,7 +227,9 @@ function AtsScan() {
         const missing_skills = Array.isArray(data.improvements)
           ? data.improvements
           : [];
-        const matched_skills = Array.isArray(data.strengths) ? data.strengths : [];
+        const matched_skills = Array.isArray(data.strengths)
+          ? data.strengths
+          : [];
         const feedback = Array.isArray(data.feedback) ? data.feedback : [];
 
         const { error: insertError } = await supabase.from("ats_scans").insert({
@@ -314,7 +321,7 @@ function AtsScan() {
         {/* Resumes List */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-white mb-4">
-            Your Resumes
+            {/* Your Resumes */}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allResumes.map((resume) => (

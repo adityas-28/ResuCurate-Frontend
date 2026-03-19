@@ -767,10 +767,10 @@ function ResuBuilder() {
 
   return (
     <div className="bg-gray-950 min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 mt-3">
         <Link
           to={"/app"}
-          className="inline-flex gap-2 items-center text-gray-400 hover:text-white transition-colors mb-6"
+          className="inline-flex gap-2 m-20px items-center text-gray-400 hover:text-white transition-colors mb-5"
         >
           <ArrowLeftIcon className="size-4" /> Back to Dashboard
         </Link>
