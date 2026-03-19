@@ -80,7 +80,7 @@ export default function MyResumes() {
         </div>
 
         {/* Search Box */}
-        <div className="mb-6">
+        <div className="mb-6 -mt-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 size-5 text-gray-400" />
             <input

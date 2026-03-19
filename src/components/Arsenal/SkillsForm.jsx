@@ -23,6 +23,27 @@ function SkillsForm({ data, onChange }) {
     }
   };
 
+  const saveSkills = async (skills) => {
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData?.user) {
+      alert("User not logged in");
+      return;
+    }
+
+    const userId = authData.user.id;
+
+    const { error } = await supabase.from("skills").insert({
+      user_id: userId,
+      skill: skills,
+    });
+
+    if (error) {
+      console.error(error);
+      alert("Failed to save skills");
+    }
+  };
+
   return (
     <div>
       <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
@@ -76,7 +97,9 @@ function SkillsForm({ data, onChange }) {
         {skills.length === 0 && (
           <div className="text-center py-8 text-gray-500 border border-gray-700 border-dashed rounded-lg">
             <Sparkles className="size-12 mx-auto mb-2 opacity-50 text-gray-600" />
-            <p className="text-gray-400">No skills added yet. Add your first skill above.</p>
+            <p className="text-gray-400">
+              No skills added yet. Add your first skill above.
+            </p>
           </div>
         )}
       </div>

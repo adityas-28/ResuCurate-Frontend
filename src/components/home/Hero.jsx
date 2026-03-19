@@ -58,7 +58,7 @@ export default function Hero({ border = "none", boxShadow = "none" }) {
       animation: rotate 4s linear infinite;
     }
   `}</style>
-        <MagnetButton padding={50} disabled={false} magnetStrength={8}>
+        <MagnetButton padding={25} disabled={false} magnetStrength={8}>
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}

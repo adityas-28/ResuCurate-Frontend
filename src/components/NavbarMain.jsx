@@ -36,7 +36,7 @@ const Cursor = ({ position }) => {
   return (
     <motion.li
       animate={position}
-      className="absolute z-0 h-9 rounded-full bg-cyan-50 text-black shadow-lg shadow-indigo-500/50"
+      className="absolute z-0 h-9 rounded-full bg-gray-300 text-black shadow-lg shadow-indigo-500/50"
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       style={{
         opacity: position.opacity,

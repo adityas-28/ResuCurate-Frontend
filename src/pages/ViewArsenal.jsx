@@ -19,7 +19,8 @@ import {
   Sparkles,
   BookOpen,
 } from "lucide-react";
-import { dummyResumeData } from "../assets/assets";
+// import { dummyResumeData } from "../assets/assets";
+import { supabase } from "../lib/supabase";
 
 const sectionIcons = {
   personal_info: User,
@@ -66,10 +67,53 @@ export default function ViewArsenal() {
   }, [searchQuery, arsenalData]);
 
   const loadArsenalData = async () => {
-    // In a real app, this would load from API
-    // For now, using dummy data as arsenal
-    const data = dummyResumeData[0];
-    setArsenalData(data);
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user.id;
+  
+    const [
+      personal,
+      summary,
+      objective,
+      experience,
+      education,
+      leadership,
+      projects,
+      research,
+      certifications,
+      achievements,
+      skills,
+      publications
+    ] = await Promise.all([
+      supabase.from("personal_details").select("*").eq("user_id", userId).single(),
+      supabase.from("professional_summary").select("*").eq("user_id", userId).single(),
+      supabase.from("career_objectives").select("*").eq("user_id", userId).single(),
+      supabase.from("professional_experience").select("*").eq("user_id", userId),
+      supabase.from("education").select("*").eq("user_id", userId),
+      supabase.from("leadership").select("*").eq("user_id", userId),
+      supabase.from("projects").select("*").eq("user_id", userId),
+      supabase.from("research").select("*").eq("user_id", userId),
+      supabase.from("certifications").select("*").eq("user_id", userId),
+      supabase.from("achievements").select("*").eq("user_id", userId),
+      supabase.from("skills").select("*").eq("user_id", userId),
+      supabase.from("publications").select("*").eq("user_id", userId)
+    ]);
+  
+    const arsenal = {
+      personal_info: personal.data,
+      professional_summary: summary.data?.professional_summary || "",
+      career_objective: objective.data?.career_objective || "",
+      experience: experience.data || [],
+      education: education.data || [],
+      leadership: leadership.data || [],
+      project: projects.data || [],
+      research: research.data || [],
+      certifications: certifications.data || [],
+      awards_and_honors: achievements.data || [],
+      skills: skills.data ? skills.data.map((s) => s.skill) : [],
+      publications: publications.data || []
+    };
+  
+    setArsenalData(arsenal);
   };
 
   const filterArsenalData = () => {
@@ -85,7 +129,9 @@ export default function ViewArsenal() {
 
     // Filter personal info
     if (arsenalData.personal_info) {
-      const personalStr = JSON.stringify(arsenalData.personal_info).toLowerCase();
+      const personalStr = JSON.stringify(
+        arsenalData.personal_info,
+      ).toLowerCase();
       if (personalStr.includes(query)) {
         filtered.personal_info = arsenalData.personal_info;
       }
@@ -123,7 +169,7 @@ export default function ViewArsenal() {
     // Filter skills array
     if (arsenalData.skills && Array.isArray(arsenalData.skills)) {
       const filteredSkills = arsenalData.skills.filter((skill) =>
-        skill.toLowerCase().includes(query)
+        skill.toLowerCase().includes(query),
       );
       if (filteredSkills.length > 0) {
         filtered.skills = filteredSkills;
@@ -140,21 +186,47 @@ export default function ViewArsenal() {
     });
   };
 
-  const handleDelete = (section, itemId) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      // In a real app, this would call an API
-      if (section === "skills" && typeof itemId === "number") {
-        // Skills is an array of strings, itemId is the index
-        setArsenalData({
-          ...arsenalData,
-          skills: arsenalData.skills.filter((_, index) => index !== itemId),
-        });
-      } else if (Array.isArray(arsenalData[section])) {
-        setArsenalData({
-          ...arsenalData,
-          [section]: arsenalData[section].filter((item) => item._id !== itemId),
-        });
+  const handleDelete = async (section, itemId) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+  
+    const tableMap = {
+      experience: "professional_experience",
+      education: "education",
+      leadership: "leadership",
+      project: "projects",
+      research: "research",
+      certifications: "certifications",
+      awards_and_honors: "achievements",
+      publications: "publications",
+    };
+  
+    try {
+      if (section === "skills") {
+        // Special case: skills table
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData.user.id;
+  
+        const skillToDelete = arsenalData.skills[itemId];
+  
+        await supabase
+          .from("skills")
+          .delete()
+          .eq("user_id", userId)
+          .eq("skill", skillToDelete);
+      } else {
+        const table = tableMap[section];
+  
+        await supabase
+          .from(table)
+          .delete()
+          .eq("id", itemId);
       }
+  
+      // Reload data after delete
+      loadArsenalData();
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting item");
     }
   };
 
@@ -162,7 +234,10 @@ export default function ViewArsenal() {
     switch (section) {
       case "experience":
         return (
-          <div key={item._id || index} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div
+            key={item.id || index}
+            className="bg-gray-800/50 border border-gray-700 rounded-lg p-4"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h4 className="text-white font-semibold">{item.position}</h4>
@@ -178,13 +253,13 @@ export default function ViewArsenal() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => handleEdit(section, item._id)}
+                  onClick={() => handleEdit(section, item.id)}
                   className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded transition-colors"
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(section, item._id)}
+                  onClick={() => handleDelete(section, item.id)}
                   className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
                 >
                   <Trash2 className="size-4" />
@@ -196,7 +271,10 @@ export default function ViewArsenal() {
 
       case "education":
         return (
-          <div key={item._id || index} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div
+            key={item.id || index}
+            className="bg-gray-800/50 border border-gray-700 rounded-lg p-4"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h4 className="text-white font-semibold">
@@ -209,13 +287,13 @@ export default function ViewArsenal() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => handleEdit(section, item._id)}
+                  onClick={() => handleEdit(section, item.id)}
                   className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded transition-colors"
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(section, item._id)}
+                  onClick={() => handleDelete(section, item.id)}
                   className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
                 >
                   <Trash2 className="size-4" />
@@ -227,28 +305,59 @@ export default function ViewArsenal() {
 
       case "project":
         return (
-          <div key={item._id || index} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div
+            key={item.id || index}
+            className="bg-gray-800/50 border border-gray-700 rounded-lg p-4"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="text-white font-semibold">{item.name}</h4>
-                {item.type && (
-                  <p className="text-gray-400 text-sm">{item.type}</p>
-                )}
-                {item.description && (
+                <h4 className="text-white font-semibold">
+                  {item.project_name || item.name}
+                </h4>
+                {item.project_description && (
                   <p className="text-gray-300 text-sm mt-2 line-clamp-2">
-                    {item.description}
+                    {item.project_description}
                   </p>
+                )}
+                {Array.isArray(item.tech_stack) && item.tech_stack.length > 0 && (
+                  <p className="text-gray-400 text-xs mt-2">
+                    Tech: {item.tech_stack.join(", ")}
+                  </p>
+                )}
+                {(item.project_url || item.github_url) && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
+                    {item.project_url && (
+                      <a
+                        href={item.project_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-300 hover:text-indigo-200 underline underline-offset-2"
+                      >
+                        Live
+                      </a>
+                    )}
+                    {item.github_url && (
+                      <a
+                        href={item.github_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-300 hover:text-indigo-200 underline underline-offset-2"
+                      >
+                        GitHub
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => handleEdit(section, item._id)}
+                  onClick={() => handleEdit(section, item.id)}
                   className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded transition-colors"
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(section, item._id)}
+                  onClick={() => handleDelete(section, item.id)}
                   className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
                 >
                   <Trash2 className="size-4" />
@@ -260,7 +369,10 @@ export default function ViewArsenal() {
 
       case "skills":
         return (
-          <div key={index} className="inline-flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2">
+          <div
+            key={index}
+            className="inline-flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2"
+          >
             <span className="text-white text-sm">{item}</span>
             <button
               onClick={() => handleDelete(section, index)}
@@ -273,7 +385,10 @@ export default function ViewArsenal() {
 
       default:
         return (
-          <div key={item._id || index} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div
+            key={item.id || index}
+            className="bg-gray-800/50 border border-gray-700 rounded-lg p-4"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-gray-300 text-sm">
@@ -282,13 +397,13 @@ export default function ViewArsenal() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => handleEdit(section, item._id)}
+                  onClick={() => handleEdit(section, item.id)}
                   className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded transition-colors"
                 >
                   <Pencil className="size-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(section, item._id)}
+                  onClick={() => handleDelete(section, item.id)}
                   className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
                 >
                   <Trash2 className="size-4" />
@@ -370,7 +485,10 @@ export default function ViewArsenal() {
           <div className="space-y-3">
             {sectionKey === "skills"
               ? data.map((skill, index) => (
-                  <div key={index} className="inline-flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <div
+                    key={index}
+                    className="inline-flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 mr-2 mb-2"
+                  >
                     <span className="text-white text-sm">{skill}</span>
                     <button
                       onClick={() => handleDelete(sectionKey, index)}

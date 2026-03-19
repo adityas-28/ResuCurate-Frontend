@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { dummyResumeData } from "../assets/assets";
 import {
   ArrowLeftIcon,
@@ -34,9 +34,11 @@ import SkillsForm from "../components/Arsenal/SkillsForm";
 import PublicationsForm from "../components/Arsenal/PublicationsForm";
 import TemplateSelector from "../components/Arsenal/TemplateSelector";
 import ColorPicker from "../components/ColorPicker";
+import { supabase } from "../lib/supabase";
 
 function ResuBuilder() {
   const { resumeId } = useParams();
+  const location = useLocation();
 
   const [resumeData, setResumeData] = useState({
     _id: "",
@@ -104,12 +106,284 @@ function ResuBuilder() {
     { id: "publications", name: "Publications", icon: BookOpen },
   ];
 
+  useEffect(() => {
+    const requested = location?.state?.section;
+    if (!requested) return;
+
+    const map = {
+      personal_info: "personal",
+      project: "projects",
+    };
+
+    const normalized = map[requested] || requested;
+    const idx = sections.findIndex((s) => s.id === normalized);
+    if (idx >= 0) setActiveSectionIndex(idx);
+  }, [location?.state?.section]);
+
   const toggleSectionIncluded = (sectionId, e) => {
     e.stopPropagation();
     setSectionIncluded((prev) => ({
       ...prev,
       [sectionId]: !prev[sectionId],
     }));
+  };
+
+  const monthToDateString = (value) => {
+    if (!value || typeof value !== "string") return null;
+    // <input type="month" /> gives "YYYY-MM"
+    if (/^\d{4}-\d{2}$/.test(value)) return `${value}-01`;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    return null;
+  };
+
+  const parseTechStack = (value) => {
+    if (!value || typeof value !== "string") return null;
+    const arr = value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return arr.length > 0 ? arr : null;
+  };
+
+  const dateToMonthString = (value) => {
+    if (!value) return "";
+    // DB returns YYYY-MM-DD (date) or ISO timestamp; month input needs YYYY-MM
+    const s = String(value);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 7);
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${yyyy}-${mm}`;
+  };
+
+  const handleSave = async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user.id;
+
+    const currentSection = sections[activeSectionIndex].id;
+
+    try {
+      switch (currentSection) {
+        case "personal":
+          {
+            const { website, personal_website, ...rest } =
+              resumeData.personal_info || {};
+
+            const payload = {
+              user_id: userId,
+              ...rest,
+              // DB column is `personal_website`; keep compatibility with form field `website`
+              personal_website: personal_website ?? website ?? null,
+            };
+
+            const { error } = await supabase
+              .from("personal_details")
+              .upsert(payload);
+            if (error) {
+              console.error("Personal details error:", error);
+              alert(error.message);
+              return;
+            }
+          }
+          break;
+
+        case "professional_summary":
+          {
+            const { error } = await supabase
+              .from("professional_summary")
+              .upsert(
+                {
+                  user_id: userId,
+                  professional_summary: resumeData.professional_summary,
+                },
+                { onConflict: "user_id" },
+              );
+            if (error) {
+              console.error("Professional summary error:", error);
+              alert(error.message);
+              return;
+            }
+          }
+          break;
+
+        case "career_objective":
+          {
+            const { error: deleteError } = await supabase
+              .from("career_objectives")
+              .delete()
+              .eq("user_id", userId);
+            if (deleteError) {
+              console.error("Career objective delete error:", deleteError);
+              alert(deleteError.message);
+              return;
+            }
+
+            const { error: insertError } = await supabase
+              .from("career_objectives")
+              .insert({
+                user_id: userId,
+                career_objective: resumeData.career_objective || null,
+              });
+            if (insertError) {
+              console.error("Career objective error:", insertError);
+              alert(insertError.message);
+              return;
+            }
+          }
+          break;
+
+        case "experience":
+          {
+            const { error: deleteError } = await supabase
+              .from("professional_experience")
+              .delete()
+              .eq("user_id", userId);
+            if (deleteError) {
+              console.error("Experience delete error:", deleteError);
+              alert(deleteError.message);
+              return;
+            }
+
+            const rows = (resumeData.experience || [])
+              .filter((exp) => exp && (exp.company || exp.position))
+              .map((exp) => ({
+                user_id: userId,
+                position: exp.position || null,
+                company: exp.company || null,
+                location: exp.location || null,
+                start_date: monthToDateString(exp.start_date),
+                end_date: exp.current ? null : monthToDateString(exp.end_date),
+                description: exp.description || null,
+              }));
+
+            if (rows.length > 0) {
+              const { error: insertError } = await supabase
+                .from("professional_experience")
+                .insert(rows);
+              if (insertError) {
+                console.error("Experience error:", insertError);
+                alert(insertError.message);
+                return;
+              }
+            }
+          }
+          break;
+
+        case "education":
+          {
+            const { error: deleteError } = await supabase
+              .from("education")
+              .delete()
+              .eq("user_id", userId);
+            if (deleteError) {
+              console.error("Education delete error:", deleteError);
+              alert(deleteError.message);
+              return;
+            }
+
+            const rows = (resumeData.education || [])
+              .filter((edu) => edu && (edu.degree || edu.institution))
+              .map((edu) => ({
+                user_id: userId,
+                degree: edu.degree || null,
+                field_of_study: edu.field || null,
+                institution: edu.institution || null,
+                location: edu.location || null,
+                start_date: monthToDateString(edu.start_date),
+                end_date: edu.current ? null : monthToDateString(edu.end_date),
+                gpa:
+                  edu.gpa === "" || edu.gpa === null || edu.gpa === undefined
+                    ? null
+                    : Number(edu.gpa),
+                description: edu.description || null,
+              }))
+              .filter((row) => row.gpa === null || Number.isFinite(row.gpa));
+
+            if (rows.length > 0) {
+              const { error } = await supabase.from("education").insert(rows);
+              if (error) {
+                console.error("Education error:", error);
+                alert(error.message);
+                return;
+              }
+            }
+          }
+          break;
+
+        case "projects":
+          {
+            const { error: deleteError } = await supabase
+              .from("projects")
+              .delete()
+              .eq("user_id", userId);
+            if (deleteError) {
+              console.error("Projects delete error:", deleteError);
+              alert(deleteError.message);
+              return;
+            }
+
+            const rows = (resumeData.project || [])
+              .filter((proj) => proj && proj.name)
+              .map((proj) => ({
+                user_id: userId,
+                project_name: proj.name,
+                project_description: proj.description || null,
+                tech_stack: parseTechStack(proj.technologies),
+                start_date: monthToDateString(proj.start_date),
+                end_date: proj.current ? null : monthToDateString(proj.end_date),
+                github_url: proj.github || null,
+                project_url: proj.url || null,
+              }));
+
+            if (rows.length > 0) {
+              const { error } = await supabase.from("projects").insert(rows);
+              if (error) {
+                console.error("Projects error:", error);
+                alert(error.message);
+                return;
+              }
+            }
+          }
+          break;
+
+        case "skills":
+          {
+            const { error: deleteError } = await supabase
+              .from("skills")
+              .delete()
+              .eq("user_id", userId);
+            if (deleteError) {
+              console.error("Skills delete error:", deleteError);
+              alert(deleteError.message);
+              return;
+            }
+
+            const rows = (resumeData.skills || [])
+              .map((skill) => (typeof skill === "string" ? skill.trim() : null))
+              .filter(Boolean)
+              .map((skill) => ({ user_id: userId, skill }));
+
+            if (rows.length > 0) {
+              const { error } = await supabase.from("skills").insert(rows);
+              if (error) {
+                console.error("Skills error:", error);
+                alert(error.message);
+                return;
+              }
+            }
+          }
+          break;
+
+        default:
+          alert("Section save not implemented yet");
+      }
+
+      alert(`${currentSection} saved ✅`);
+    } catch (err) {
+      console.error(err);
+      alert("Error saving section");
+    }
   };
 
   const handlePrevious = () => {
@@ -131,19 +405,114 @@ function ResuBuilder() {
 
   const loadExistingResume = async () => {
     if (resumeId === "arsenal") {
-      setResumeData({
-        ...resumeData,
-        title: "My Arsenal",
-        // In a real app, load the master arsenal data here
-        // For now, loading dummy data but we'd merge everything
-        ...dummyResumeData[0], // Loading first one as seed data
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+      if (!userId) return;
+
+      const [
+        personal,
+        summary,
+        objective,
+        experience,
+        education,
+        leadership,
+        projects,
+        research,
+        certifications,
+        achievements,
+        skills,
+        publications,
+      ] = await Promise.all([
+        supabase.from("personal_details").select("*").eq("user_id", userId).single(),
+        supabase
+          .from("professional_summary")
+          .select("*")
+          .eq("user_id", userId)
+          .single(),
+        supabase.from("career_objectives").select("*").eq("user_id", userId),
+        supabase.from("professional_experience").select("*").eq("user_id", userId),
+        supabase.from("education").select("*").eq("user_id", userId),
+        supabase.from("leadership").select("*").eq("user_id", userId),
+        supabase.from("projects").select("*").eq("user_id", userId),
+        supabase.from("research").select("*").eq("user_id", userId),
+        supabase.from("certifications").select("*").eq("user_id", userId),
+        supabase.from("achievements").select("*").eq("user_id", userId),
+        supabase.from("skills").select("*").eq("user_id", userId),
+        supabase.from("publications").select("*").eq("user_id", userId),
+      ]);
+
+      const personalInfo = personal.data || {};
+      const mappedPersonal = {
+        ...personalInfo,
+        // form commonly uses `website`; DB uses `personal_website`
+        website: personalInfo.website ?? personalInfo.personal_website ?? "",
+      };
+
+      const objectiveText =
+        objective.data && Array.isArray(objective.data) && objective.data.length > 0
+          ? objective.data[0]?.career_objective || ""
+          : "";
+
+      const mappedExperience = (experience.data || []).map((exp) => ({
+        company: exp.company || "",
+        position: exp.position || "",
+        location: exp.location || "",
+        start_date: dateToMonthString(exp.start_date),
+        end_date: dateToMonthString(exp.end_date),
+        current: !exp.end_date,
+        description: exp.description || "",
+      }));
+
+      const mappedEducation = (education.data || []).map((edu) => ({
+        degree: edu.degree || "",
+        field: edu.field_of_study || "",
+        institution: edu.institution || "",
+        location: edu.location || "",
+        start_date: dateToMonthString(edu.start_date),
+        end_date: dateToMonthString(edu.end_date),
+        current: !edu.end_date,
+        gpa:
+          edu.gpa === null || edu.gpa === undefined ? "" : String(edu.gpa),
+        description: edu.description || "",
+      }));
+
+      const mappedProjects = (projects.data || []).map((proj) => ({
+        name: proj.project_name || "",
+        description: proj.project_description || "",
+        technologies: Array.isArray(proj.tech_stack)
+          ? proj.tech_stack.join(", ")
+          : "",
+        start_date: dateToMonthString(proj.start_date),
+        end_date: dateToMonthString(proj.end_date),
+        current: !proj.end_date,
+        url: proj.project_url || "",
+        github: proj.github_url || "",
+      }));
+
+      const mappedSkills = (skills.data || []).map((s) => s.skill).filter(Boolean);
+
+      setResumeData((prev) => ({
+        ...prev,
         _id: "arsenal",
-        template: "arsenal", // Special template or null
-      });
+        title: "My Arsenal",
+        template: "arsenal",
+        personal_info: mappedPersonal,
+        professional_summary: summary.data?.professional_summary || "",
+        career_objective: objectiveText,
+        experience: mappedExperience,
+        education: mappedEducation,
+        leadership: leadership.data || [],
+        project: mappedProjects,
+        research: research.data || [],
+        certifications: certifications.data || [],
+        awards_and_honors: achievements.data || [],
+        skills: mappedSkills,
+        publications: publications.data || [],
+      }));
       document.title = "My Arsenal - ResuCurate";
       return;
     }
-    
+
     // Check if it's a generated ID (from our Dashboard mock)
     if (resumeId && resumeId.startsWith("generated-")) {
       setResumeData({
@@ -151,8 +520,8 @@ function ResuBuilder() {
         _id: resumeId,
         title: "Generated Resume",
         // Load random subset of data to simulate "generation"
-        ...dummyResumeData[0], 
-        personal_info: dummyResumeData[0].personal_info
+        ...dummyResumeData[0],
+        personal_info: dummyResumeData[0].personal_info,
       });
       document.title = "Generated Resume - ResuCurate";
       return;
@@ -261,9 +630,7 @@ function ResuBuilder() {
                       <input
                         type="checkbox"
                         checked={isIncluded}
-                        onChange={(e) =>
-                          toggleSectionIncluded(section.id, e)
-                        }
+                        onChange={(e) => toggleSectionIncluded(section.id, e)}
                         className="w-4 h-4 text-indigo-600 border-gray-500 rounded focus:ring-indigo-500 cursor-pointer bg-gray-700"
                         title="Include this section in resume"
                       />
@@ -276,156 +643,165 @@ function ResuBuilder() {
 
                   {/* Section Content */}
                   <div className="p-6 bg-gray-900">
-                        {section.id === "personal" && (
-                          <PersonalInfoForm
-                            data={resumeData.personal_info}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                personal_info: data,
-                              }))
-                            }
-                            removeBackground={removeBackground}
-                            setRemoveBackground={setRemoveBackground}
-                          />
-                        )}
+                    {section.id === "personal" && (
+                      <PersonalInfoForm
+                        data={resumeData.personal_info}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            personal_info: data,
+                          }))
+                        }
+                        removeBackground={removeBackground}
+                        setRemoveBackground={setRemoveBackground}
+                      />
+                    )}
 
-                        {section.id === "professional_summary" && (
-                          <ProfessionalSummaryForm
-                            data={resumeData.professional_summary}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                professional_summary: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "professional_summary" && (
+                      <ProfessionalSummaryForm
+                        data={resumeData.professional_summary}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            professional_summary: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "career_objective" && (
-                          <CareerObjectiveForm
-                            data={resumeData.career_objective}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                career_objective: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "career_objective" && (
+                      <CareerObjectiveForm
+                        data={resumeData.career_objective}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            career_objective: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "experience" && (
-                          <ProfessionalExperienceForm
-                            data={resumeData.experience}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                experience: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "experience" && (
+                      <ProfessionalExperienceForm
+                        data={resumeData.experience}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            experience: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "education" && (
-                          <EducationForm
-                            data={resumeData.education}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                education: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "education" && (
+                      <EducationForm
+                        data={resumeData.education}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            education: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "leadership" && (
-                          <LeadershipForm
-                            data={resumeData.leadership}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                leadership: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "leadership" && (
+                      <LeadershipForm
+                        data={resumeData.leadership}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            leadership: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "projects" && (
-                          <ProjectsForm
-                            data={resumeData.project}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                project: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "projects" && (
+                      <ProjectsForm
+                        data={resumeData.project}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            project: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "research" && (
-                          <ResearchForm
-                            data={resumeData.research}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                research: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "research" && (
+                      <ResearchForm
+                        data={resumeData.research}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            research: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "certifications" && (
-                          <CertificationsForm
-                            data={resumeData.certifications}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                certifications: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "certifications" && (
+                      <CertificationsForm
+                        data={resumeData.certifications}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            certifications: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "awards_and_honors" && (
-                          <AwardsAndHonorsForm
-                            data={resumeData.awards_and_honors}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                awards_and_honors: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "awards_and_honors" && (
+                      <AwardsAndHonorsForm
+                        data={resumeData.awards_and_honors}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            awards_and_honors: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "skills" && (
-                          <SkillsForm
-                            data={resumeData.skills}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                skills: data,
-                              }))
-                            }
-                          />
-                        )}
+                    {section.id === "skills" && (
+                      <SkillsForm
+                        data={resumeData.skills}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            skills: data,
+                          }))
+                        }
+                      />
+                    )}
 
-                        {section.id === "publications" && (
-                          <PublicationsForm
-                            data={resumeData.publications}
-                            onChange={(data) =>
-                              setResumeData((prev) => ({
-                                ...prev,
-                                publications: data,
-                              }))
-                            }
-                          />
+                    {section.id === "publications" && (
+                      <PublicationsForm
+                        data={resumeData.publications}
+                        onChange={(data) =>
+                          setResumeData((prev) => ({
+                            ...prev,
+                            publications: data,
+                          }))
+                        }
+                      />
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+
+          {isArsenal && (
+            <button
+              onClick={handleSave}
+              className="mt-6 w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-medium"
+            >
+              Save {sections[activeSectionIndex].name}
+            </button>
+          )}
         </div>
       </div>
 
