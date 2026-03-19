@@ -9,5 +9,11 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: ["aditya"],
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, ArrowLeft, Check } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 export default function GenerateResume() {
   const navigate = useNavigate();
@@ -12,37 +13,112 @@ export default function GenerateResume() {
     subCategory: "",
     singlePageOnly: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const jobCategories = {
-    "Software Development": ["Backend", "Frontend", "Fullstack", "Mobile", "DevOps", "Game Dev"],
-    "Data & AI": ["Data Scientist", "Data Engineer", "Machine Learning", "AI Researcher", "Data Analyst"],
+    "Software Development": [
+      "Backend",
+      "Frontend",
+      "Fullstack",
+      "Mobile",
+      "DevOps",
+      "Game Dev",
+    ],
+    "Data & AI": [
+      "Data Scientist",
+      "Data Engineer",
+      "Machine Learning",
+      "AI Researcher",
+      "Data Analyst",
+    ],
     "Product Management": ["Technical PM", "Growth PM", "Product Owner"],
-    "Design": ["UI/UX", "Product Design", "Graphic Design", "Motion Design"],
-    "Cybersecurity": ["Security Analyst", "Ethical Hacker", "Security Engineer"],
-    "Marketing": ["Digital Marketing", "Content Strategy", "SEO Specialist"],
+    Design: ["UI/UX", "Product Design", "Graphic Design", "Motion Design"],
+    Cybersecurity: ["Security Analyst", "Ethical Hacker", "Security Engineer"],
+    Marketing: ["Digital Marketing", "Content Strategy", "SEO Specialist"],
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
-    if (!formData.jobDescription || !formData.category || !formData.subCategory) {
+    if (formData.jobDescription.length < 20) {
+      alert("Job description must be at least 20 characters");
+      return;
+    }
+    if (
+      !formData.jobDescription ||
+      !formData.category ||
+      !formData.subCategory
+    ) {
       alert("Please fill in all required fields");
       return;
     }
 
-    // Generate resume ID
-    const generatedId = `generated-${Date.now()}`;
-    
-    // Navigate to builder with the generated resume
-    // In a real app, you would send this data to backend to generate the resume
-    // and then navigate to the builder with the generated resume ID
-    navigate(`/app/builder/${generatedId}`, {
-      state: {
-        formData,
-        isNewResume: true,
-      },
-    });
+    setIsSubmitting(true);
+
+    try {
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+      if (authError) {
+        console.error("Auth error:", authError);
+        alert(authError.message);
+        return;
+      }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        alert("Please sign in again.");
+        return;
+      }
+
+      const payload = {
+        user_id: userId,
+        job_description: formData.jobDescription,
+        experience_level: formData.experienceLevel,
+        category: formData.category,
+        sub_category: formData.subCategory,
+        single_page_only: formData.singlePageOnly,
+      };
+
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/generate-resume`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message =
+          data?.message || data?.error || `Request failed (${res.status})`;
+        console.error("Generate resume error:", data);
+        alert(message);
+        return;
+      }
+
+      const resumeId = data?.resume_id || data?.resumeId || data?.id;
+      if (!resumeId) {
+        console.error("Generate resume error: missing resume id in response", data);
+        alert("Generation succeeded but no resume ID was returned from the server.");
+        return;
+      }
+
+      navigate(`/app/builder/${resumeId}`, {
+        state: {
+          formData,
+          apiPayload: payload,
+          apiResponse: data.data, // 🔥 IMPORTANT FIX
+          resumeId: data.resume_id,
+          isNewResume: true,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || "Failed to generate resume");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -74,14 +150,20 @@ export default function GenerateResume() {
         </button>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Generate New Resume</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Generate New Resume
+          </h1>
           <p className="text-gray-400">
-            Provide details about the job you're applying for, and we'll generate a tailored resume from your Arsenal.
+            Provide details about the job you're applying for, and we'll
+            generate a tailored resume from your Arsenal.
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 shadow-xl"
+        >
           <div className="space-y-6">
             {/* Job Description */}
             <div>
@@ -109,7 +191,9 @@ export default function GenerateResume() {
                 </label>
                 <select
                   value={formData.experienceLevel}
-                  onChange={(e) => handleChange("experienceLevel", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("experienceLevel", e.target.value)
+                  }
                   className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Entry Level">Entry Level (0-2 years)</option>
@@ -130,7 +214,9 @@ export default function GenerateResume() {
                   className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none cursor-pointer"
                   required
                 >
-                  <option value="" disabled>Select Category</option>
+                  <option value="" disabled>
+                    Select Category
+                  </option>
                   {Object.keys(jobCategories).map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -153,7 +239,9 @@ export default function GenerateResume() {
                 required
               >
                 <option value="" disabled>
-                  {formData.category ? "Select Sub-category" : "Select Category first"}
+                  {formData.category
+                    ? "Select Sub-category"
+                    : "Select Category first"}
                 </option>
                 {formData.category &&
                   jobCategories[formData.category].map((sub) => (
@@ -171,7 +259,9 @@ export default function GenerateResume() {
                   type="checkbox"
                   id="singlePageOnly"
                   checked={formData.singlePageOnly}
-                  onChange={(e) => handleChange("singlePageOnly", e.target.checked)}
+                  onChange={(e) =>
+                    handleChange("singlePageOnly", e.target.checked)
+                  }
                   className="sr-only"
                 />
                 <label
@@ -215,12 +305,15 @@ export default function GenerateResume() {
               disabled={
                 !formData.jobDescription ||
                 !formData.category ||
-                !formData.subCategory
+                !formData.subCategory ||
+                isSubmitting
               }
               className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
             >
               <Sparkles className="size-5" />
-              <span>Generate Tailored Resume</span>
+              <span>
+                {isSubmitting ? "Generating..." : "Generate Tailored Resume"}
+              </span>
             </button>
           </div>
         </form>
